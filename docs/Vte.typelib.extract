@@ -1,0 +1,940 @@
+
+Struct name: VteCharAttributes -- Size: 40 bytes
+Registered: No
+
+Fields: 7
+  gint64   row           (R)
+  gint64   column        (R)
+  VteColor fore          (R)
+  VteColor back          (R)
+  guint32  underline     (R)
+  guint32  strikethrough (R)
+  guint32  columns       (R)
+
+
+Methods: 0
+
+
+
+Enum name: CursorBlinkMode
+
+Values: 3
+  system = 0
+  on     = 1
+  off    = 2
+
+
+Methods: 0
+
+
+
+Enum name: CursorShape
+
+Values: 3
+  block     = 0
+  ibeam     = 1
+  underline = 2
+
+
+Methods: 0
+
+
+
+Enum name: EraseBinding
+
+Values: 5
+  auto            = 0
+  ascii_backspace = 1
+  ascii_delete    = 2
+  delete_sequence = 3
+  tty             = 4
+
+
+Methods: 0
+
+
+
+Enum name: Format
+
+Values: 2
+  text = 1
+  html = 2
+
+
+Methods: 0
+
+
+
+Constant:  MAJOR_VERSION = '0' (vtechar)
+
+
+
+Constant:  MICRO_VERSION = '3' (vtechar)
+
+
+
+Constant:  MINOR_VERSION = '60' (vtechar)
+
+
+
+Object name: VtePty --- Parent: GObject
+
+Constants: 0
+
+
+Fields: 0
+
+
+Properties: 2
+   fd (RW)
+   flags (RW)
+
+
+Requred interfaces: 1
+  GInitable
+
+
+Methods: 10
+  VtePty *                    vte_pty_new_foreign_sync (
+                                  gint32 fd,
+                                  VteCancellable * cancellable
+                                )
+
+  VtePty *                    vte_pty_new_sync (
+                                  VtePtyFlags flags,
+                                  VteCancellable * cancellable
+                                )
+
+  void                        vte_pty_child_setup ()
+
+  void                        vte_pty_close ()
+
+  gint32                      vte_pty_get_fd ()
+
+  gboolean                    vte_pty_get_size (
+                                  gint32 * rows,
+                                  gint32 * columns
+                                )
+
+  gboolean                    vte_pty_set_size (
+                                  gint32 rows,
+                                  gint32 columns
+                                )
+
+  gboolean                    vte_pty_set_utf8 (gboolean utf8)
+
+  void                        vte_pty_spawn_async (
+                                  char * working_directory,
+                                  array[filename] * argv,
+                                  array[filename] * envv,
+                                  VteSpawnFlags spawn_flags,
+                                  VteSpawnChildSetupFunc child_setup,
+                                  void * child_setup_data,
+                                  VteDestroyNotify child_setup_data_destroy,
+                                  gint32 timeout,
+                                  VteCancellable * cancellable,
+                                  VteAsyncReadyCallback callback,
+                                  void * user_data
+                                )
+
+  gboolean                    vte_pty_spawn_finish (
+                                  VteAsyncResult * result,
+                                  gint32 * child_pid
+                                )
+
+
+
+Signals: 0
+
+
+V-Funcs: 0
+
+
+
+Struct name: VtePtyClass -- Size: 0 bytes
+Registered: Yes
+
+Fields: 0
+
+
+Methods: 0
+
+
+
+Enum name: PtyError
+
+Values: 2
+  pty_helper_failed = 0
+  pty98_failed      = 1
+
+
+Methods: 1
+  guint32                     vte_ptyerror_quark ()
+
+
+
+
+Flags name: PtyFlags
+
+Values: 8
+  no_lastlog  = 1
+  no_utmp     = 2
+  no_wtmp     = 4
+  no_helper   = 8
+  no_fallback = 16
+  no_session  = 32
+  no_ctty     = 64
+  default     = 0
+
+
+Methods: 0
+
+
+
+Constant:  REGEX_FLAGS_DEFAULT = '1075314688' (vtechar)
+
+
+
+Struct name: VteRegex -- Size: 0 bytes
+Registered: No
+
+Fields: 0
+
+
+Methods: 6
+  VteRegex *                  vte_regex_new_for_match (
+                                  char * pattern,
+                                  gint64 pattern_length,
+                                  guint32 flags
+                                )
+
+  VteRegex *                  vte_regex_new_for_search (
+                                  char * pattern,
+                                  gint64 pattern_length,
+                                  guint32 flags
+                                )
+
+  gboolean                    vte_regex_jit (guint32 flags)
+
+  VteRegex *                  vte_regex_ref ()
+
+  char *                      vte_regex_substitute (
+                                  char * subject,
+                                  char * replacement,
+                                  guint32 flags
+                                )
+
+  VteRegex *                  vte_regex_unref ()
+
+
+
+
+Enum name: RegexError
+
+Values: 2
+  incompatible  = 2147483646
+  not_supported = 2147483647
+
+
+Methods: 1
+  guint32                     vte_regexerror_quark ()
+
+
+
+
+Constant:  SPAWN_NO_PARENT_ENVV = '33554432' (vtechar)
+
+
+
+Constant:  SPAWN_NO_SYSTEMD_SCOPE = '67108864' (vtechar)
+
+
+
+Constant:  SPAWN_REQUIRE_SYSTEMD_SCOPE = '134217728' (vtechar)
+
+
+Callback:
+    gboolean                    SelectionFunc (
+                                  VteTerminal * terminal,
+                                  gint64 column,
+                                  gint64 row,
+                                  void * data
+                                )
+
+
+
+
+Constant:  TEST_FLAGS_ALL = '-1' (vtechar)
+
+
+
+Constant:  TEST_FLAGS_NONE = '0' (vtechar)
+
+
+
+Object name: VteTerminal --- Parent: GtkWidget
+
+Constants: 0
+
+
+Fields: 2
+  VteWidget widget          (R)
+  array     _unused_padding (R)
+
+
+Properties: 30
+   allow-bold (RW)
+   allow-hyperlink (RW)
+   audible-bell (RW)
+   backspace-binding (RW)
+   bold-is-bright (RW)
+   cell-height-scale (RW)
+   cell-width-scale (RW)
+   cjk-ambiguous-width (RW)
+   current-directory-uri (R)
+   current-file-uri (R)
+   cursor-blink-mode (RW)
+   cursor-shape (RW)
+   delete-binding (RW)
+   enable-bidi (RW)
+   enable-shaping (RW)
+   encoding (RW)
+   font-desc (RW)
+   font-scale (RW)
+   hyperlink-hover-uri (R)
+   icon-title (R)
+   input-enabled (RW)
+   pointer-autohide (RW)
+   pty (RW)
+   rewrap-on-resize (RW)
+   scroll-on-keystroke (RW)
+   scroll-on-output (RW)
+   scrollback-lines (RW)
+   text-blink-mode (RW)
+   window-title (R)
+   word-char-exceptions (R)
+
+
+Requred interfaces: 3
+  AtkImplementorIface
+  GtkBuildable
+  GtkScrollable
+
+
+Methods: 112
+  VteTerminal *               vte_terminal_new ()
+
+  void                        vte_terminal_copy_clipboard ()
+
+  void                        vte_terminal_copy_clipboard_format (VteFormat format)
+
+  void                        vte_terminal_copy_primary ()
+
+  gboolean                    vte_terminal_event_check_gregex_simple (
+                                  VteEvent * event,
+                                  array[VteRegex] * regexes,
+                                  guint64 * n_regexes,
+                                  VteRegexMatchFlags match_flags,
+                                  array[char] * matches
+                                )
+
+  gboolean                    vte_terminal_event_check_regex_simple (
+                                  VteEvent * event,
+                                  array[VteRegex] * regexes,
+                                  guint64 * n_regexes,
+                                  guint32 match_flags,
+                                  array[char] * matches
+                                )
+
+  void                        vte_terminal_feed (
+                                  array[guint8] * data,
+                                  gint64 length
+                                )
+
+  void                        vte_terminal_feed_child (
+                                  array[guint8] * text,
+                                  gint64 length
+                                )
+
+  void                        vte_terminal_feed_child_binary (
+                                  array[guint8] * data,
+                                  guint64 length
+                                )
+
+  gboolean                    vte_terminal_get_allow_bold ()
+
+  gboolean                    vte_terminal_get_allow_hyperlink ()
+
+  gboolean                    vte_terminal_get_audible_bell ()
+
+  gboolean                    vte_terminal_get_bold_is_bright ()
+
+  gdouble                     vte_terminal_get_cell_height_scale ()
+
+  gdouble                     vte_terminal_get_cell_width_scale ()
+
+  gint64                      vte_terminal_get_char_height ()
+
+  gint64                      vte_terminal_get_char_width ()
+
+  gint32                      vte_terminal_get_cjk_ambiguous_width ()
+
+  void                        vte_terminal_get_color_background_for_draw (VteRGBA * color)
+
+  gint64                      vte_terminal_get_column_count ()
+
+  char *                      vte_terminal_get_current_directory_uri ()
+
+  char *                      vte_terminal_get_current_file_uri ()
+
+  VteCursorBlinkMode          vte_terminal_get_cursor_blink_mode ()
+
+  void                        vte_terminal_get_cursor_position (
+                                  gint64 * column,
+                                  gint64 * row
+                                )
+
+  VteCursorShape              vte_terminal_get_cursor_shape ()
+
+  gboolean                    vte_terminal_get_enable_bidi ()
+
+  gboolean                    vte_terminal_get_enable_shaping ()
+
+  char *                      vte_terminal_get_encoding ()
+
+  VteFontDescription *        vte_terminal_get_font ()
+
+  gdouble                     vte_terminal_get_font_scale ()
+
+  void                        vte_terminal_get_geometry_hints (
+                                  VteGeometry * hints,
+                                  gint32 min_rows,
+                                  gint32 min_columns
+                                )
+
+  gboolean                    vte_terminal_get_has_selection ()
+
+  char *                      vte_terminal_get_icon_title ()
+
+  gboolean                    vte_terminal_get_input_enabled ()
+
+  gboolean                    vte_terminal_get_mouse_autohide ()
+
+  VtePty *                    vte_terminal_get_pty ()
+
+  gboolean                    vte_terminal_get_rewrap_on_resize ()
+
+  gint64                      vte_terminal_get_row_count ()
+
+  gboolean                    vte_terminal_get_scroll_on_keystroke ()
+
+  gboolean                    vte_terminal_get_scroll_on_output ()
+
+  gint64                      vte_terminal_get_scrollback_lines ()
+
+  char *                      vte_terminal_get_text (
+                                  VteSelectionFunc is_selected,
+                                  void * user_data,
+                                  array[VteCharAttributes] * attributes
+                                )
+
+  VteTextBlinkMode            vte_terminal_get_text_blink_mode ()
+
+  char *                      vte_terminal_get_text_include_trailing_spaces (
+                                  VteSelectionFunc is_selected,
+                                  void * user_data,
+                                  array[VteCharAttributes] * attributes
+                                )
+
+  char *                      vte_terminal_get_text_range (
+                                  gint64 start_row,
+                                  gint64 start_col,
+                                  gint64 end_row,
+                                  gint64 end_col,
+                                  VteSelectionFunc is_selected,
+                                  void * user_data,
+                                  array[VteCharAttributes] * attributes
+                                )
+
+  char *                      vte_terminal_get_window_title ()
+
+  char *                      vte_terminal_get_word_char_exceptions ()
+
+  char *                      vte_terminal_hyperlink_check_event (VteEvent * event)
+
+  gint32                      vte_terminal_match_add_gregex (
+                                  VteRegex * gregex,
+                                  VteRegexMatchFlags gflags
+                                )
+
+  gint32                      vte_terminal_match_add_regex (
+                                  VteRegex * regex,
+                                  guint32 flags
+                                )
+
+  char *                      vte_terminal_match_check (
+                                  gint64 column,
+                                  gint64 row,
+                                  gint32 * tag
+                                )
+
+  char *                      vte_terminal_match_check_event (
+                                  VteEvent * event,
+                                  gint32 * tag
+                                )
+
+  void                        vte_terminal_match_remove (gint32 tag)
+
+  void                        vte_terminal_match_remove_all ()
+
+  void                        vte_terminal_match_set_cursor (
+                                  gint32 tag,
+                                  VteCursor * cursor
+                                )
+
+  void                        vte_terminal_match_set_cursor_name (
+                                  gint32 tag,
+                                  char * cursor_name
+                                )
+
+  void                        vte_terminal_match_set_cursor_type (
+                                  gint32 tag,
+                                  VteCursorType cursor_type
+                                )
+
+  void                        vte_terminal_paste_clipboard ()
+
+  void                        vte_terminal_paste_primary ()
+
+  VtePty *                    vte_terminal_pty_new_sync (
+                                  VtePtyFlags flags,
+                                  VteCancellable * cancellable
+                                )
+
+  void                        vte_terminal_reset (
+                                  gboolean clear_tabstops,
+                                  gboolean clear_history
+                                )
+
+  gboolean                    vte_terminal_search_find_next ()
+
+  gboolean                    vte_terminal_search_find_previous ()
+
+  VteRegex *                  vte_terminal_search_get_gregex ()
+
+  VteRegex *                  vte_terminal_search_get_regex ()
+
+  gboolean                    vte_terminal_search_get_wrap_around ()
+
+  void                        vte_terminal_search_set_gregex (
+                                  VteRegex * gregex,
+                                  VteRegexMatchFlags gflags
+                                )
+
+  void                        vte_terminal_search_set_regex (
+                                  VteRegex * regex,
+                                  guint32 flags
+                                )
+
+  void                        vte_terminal_search_set_wrap_around (gboolean wrap_around)
+
+  void                        vte_terminal_select_all ()
+
+  void                        vte_terminal_set_allow_bold (gboolean allow_bold)
+
+  void                        vte_terminal_set_allow_hyperlink (gboolean allow_hyperlink)
+
+  void                        vte_terminal_set_audible_bell (gboolean is_audible)
+
+  void                        vte_terminal_set_backspace_binding (VteEraseBinding binding)
+
+  void                        vte_terminal_set_bold_is_bright (gboolean bold_is_bright)
+
+  void                        vte_terminal_set_cell_height_scale (gdouble scale)
+
+  void                        vte_terminal_set_cell_width_scale (gdouble scale)
+
+  void                        vte_terminal_set_cjk_ambiguous_width (gint32 width)
+
+  void                        vte_terminal_set_clear_background (gboolean setting)
+
+  void                        vte_terminal_set_color_background (VteRGBA * background)
+
+  void                        vte_terminal_set_color_bold (VteRGBA * bold)
+
+  void                        vte_terminal_set_color_cursor (VteRGBA * cursor_background)
+
+  void                        vte_terminal_set_color_cursor_foreground (VteRGBA * cursor_foreground)
+
+  void                        vte_terminal_set_color_foreground (VteRGBA * foreground)
+
+  void                        vte_terminal_set_color_highlight (VteRGBA * highlight_background)
+
+  void                        vte_terminal_set_color_highlight_foreground (VteRGBA * highlight_foreground)
+
+  void                        vte_terminal_set_colors (
+                                  VteRGBA * foreground,
+                                  VteRGBA * background,
+                                  array[VteRGBA] * palette,
+                                  guint64 palette_size
+                                )
+
+  void                        vte_terminal_set_cursor_blink_mode (VteCursorBlinkMode mode)
+
+  void                        vte_terminal_set_cursor_shape (VteCursorShape shape)
+
+  void                        vte_terminal_set_default_colors ()
+
+  void                        vte_terminal_set_delete_binding (VteEraseBinding binding)
+
+  void                        vte_terminal_set_enable_bidi (gboolean enable_bidi)
+
+  void                        vte_terminal_set_enable_shaping (gboolean enable_shaping)
+
+  gboolean                    vte_terminal_set_encoding (char * codeset)
+
+  void                        vte_terminal_set_font (VteFontDescription * font_desc)
+
+  void                        vte_terminal_set_font_scale (gdouble scale)
+
+  void                        vte_terminal_set_geometry_hints_for_window (VteWindow * window)
+
+  void                        vte_terminal_set_input_enabled (gboolean enabled)
+
+  void                        vte_terminal_set_mouse_autohide (gboolean setting)
+
+  void                        vte_terminal_set_pty (VtePty * pty)
+
+  void                        vte_terminal_set_rewrap_on_resize (gboolean rewrap)
+
+  void                        vte_terminal_set_scroll_on_keystroke (gboolean scroll)
+
+  void                        vte_terminal_set_scroll_on_output (gboolean scroll)
+
+  void                        vte_terminal_set_scrollback_lines (gint64 lines)
+
+  void                        vte_terminal_set_size (
+                                  gint64 columns,
+                                  gint64 rows
+                                )
+
+  void                        vte_terminal_set_text_blink_mode (VteTextBlinkMode text_blink_mode)
+
+  void                        vte_terminal_set_word_char_exceptions (char * exceptions)
+
+  void                        vte_terminal_spawn_async (
+                                  VtePtyFlags pty_flags,
+                                  char * working_directory,
+                                  array[filename] * argv,
+                                  array[filename] * envv,
+                                  VteSpawnFlags spawn_flags_,
+                                  VteSpawnChildSetupFunc child_setup,
+                                  void * child_setup_data,
+                                  VteDestroyNotify child_setup_data_destroy,
+                                  gint32 timeout,
+                                  VteCancellable * cancellable,
+                                  VteTerminalSpawnAsyncCallback callback,
+                                  void * user_data
+                                )
+
+  gboolean                    vte_terminal_spawn_sync (
+                                  VtePtyFlags pty_flags,
+                                  char * working_directory,
+                                  array[filename] * argv,
+                                  array[filename] * envv,
+                                  VteSpawnFlags spawn_flags,
+                                  VteSpawnChildSetupFunc child_setup,
+                                  void * child_setup_data,
+                                  gint32 * child_pid,
+                                  VteCancellable * cancellable
+                                )
+
+  void                        vte_terminal_unselect_all ()
+
+  void                        vte_terminal_watch_child (gint32 child_pid)
+
+  gboolean                    vte_terminal_write_contents_sync (
+                                  VteOutputStream * stream,
+                                  VteWriteFlags flags,
+                                  VteCancellable * cancellable
+                                )
+
+
+
+Signals: 31
+  void                        bell ()
+
+  void                        char-size-changed (
+                                  guint32 width,
+                                  guint32 height
+                                )
+
+  void                        child-exited (gint32 status)
+
+  void                        commit (
+                                  char * text,
+                                  guint32 size
+                                )
+
+  void                        contents-changed ()
+
+  void                        copy-clipboard ()
+
+  void                        current-directory-uri-changed ()
+
+  void                        current-file-uri-changed ()
+
+  void                        cursor-moved ()
+
+  void                        decrease-font-size ()
+
+  void                        deiconify-window ()
+
+  void                        encoding-changed ()
+
+  void                        eof ()
+
+  void                        hyperlink-hover-uri-changed (
+                                  char * uri,
+                                  VteRectangle bbox
+                                )
+
+  void                        icon-title-changed ()
+
+  void                        iconify-window ()
+
+  void                        increase-font-size ()
+
+  void                        lower-window ()
+
+  void                        maximize-window ()
+
+  void                        move-window (
+                                  guint32 x,
+                                  guint32 y
+                                )
+
+  void                        paste-clipboard ()
+
+  void                        raise-window ()
+
+  void                        refresh-window ()
+
+  void                        resize-window (
+                                  guint32 width,
+                                  guint32 height
+                                )
+
+  void                        restore-window ()
+
+  void                        selection-changed ()
+
+  void                        text-deleted ()
+
+  void                        text-inserted ()
+
+  void                        text-modified ()
+
+  void                        text-scrolled (gint32 delta)
+
+  void                        window-title-changed ()
+
+
+
+V-Funcs: 28
+  void                        bell ()
+
+  void                        char_size_changed (
+                                  guint32 char_width,
+                                  guint32 char_height
+                                )
+
+  void                        child_exited (gint32 status)
+
+  void                        commit (
+                                  char * text,
+                                  guint32 size
+                                )
+
+  void                        contents_changed ()
+
+  void                        copy_clipboard ()
+
+  void                        cursor_moved ()
+
+  void                        decrease_font_size ()
+
+  void                        deiconify_window ()
+
+  void                        encoding_changed ()
+
+  void                        eof ()
+
+  void                        icon_title_changed ()
+
+  void                        iconify_window ()
+
+  void                        increase_font_size ()
+
+  void                        lower_window ()
+
+  void                        maximize_window ()
+
+  void                        move_window (
+                                  guint32 x,
+                                  guint32 y
+                                )
+
+  void                        paste_clipboard ()
+
+  void                        raise_window ()
+
+  void                        refresh_window ()
+
+  void                        resize_window (
+                                  guint32 width,
+                                  guint32 height
+                                )
+
+  void                        restore_window ()
+
+  void                        selection_changed ()
+
+  void                        text_deleted ()
+
+  void                        text_inserted ()
+
+  void                        text_modified ()
+
+  void                        text_scrolled (gint32 delta)
+
+  void                        window_title_changed ()
+
+
+
+
+Struct name: VteTerminalClass -- Size: 1184 bytes
+Registered: Yes
+
+Fields: 31
+  VteWidgetClass            parent_class         (R)
+  Vteeof                    eof                  (R)
+  Vtechild_exited           child_exited         (R)
+  Vteencoding_changed       encoding_changed     (R)
+  Vtechar_size_changed      char_size_changed    (R)
+  Vtewindow_title_changed   window_title_changed (R)
+  Vteicon_title_changed     icon_title_changed   (R)
+  Vteselection_changed      selection_changed    (R)
+  Vtecontents_changed       contents_changed     (R)
+  Vtecursor_moved           cursor_moved         (R)
+  Vtecommit                 commit               (R)
+  Vtedeiconify_window       deiconify_window     (R)
+  Vteiconify_window         iconify_window       (R)
+  Vteraise_window           raise_window         (R)
+  Vtelower_window           lower_window         (R)
+  Vterefresh_window         refresh_window       (R)
+  Vterestore_window         restore_window       (R)
+  Vtemaximize_window        maximize_window      (R)
+  Vteresize_window          resize_window        (R)
+  Vtemove_window            move_window          (R)
+  Vteincrease_font_size     increase_font_size   (R)
+  Vtedecrease_font_size     decrease_font_size   (R)
+  Vtetext_modified          text_modified        (R)
+  Vtetext_inserted          text_inserted        (R)
+  Vtetext_deleted           text_deleted         (R)
+  Vtetext_scrolled          text_scrolled        (R)
+  Vtecopy_clipboard         copy_clipboard       (R)
+  Vtepaste_clipboard        paste_clipboard      (R)
+  Vtebell                   bell                 (R)
+  array                     padding              (R)
+  VteTerminalClassPrivate * priv                 (R)
+
+
+Methods: 0
+
+
+
+Struct name: VteTerminalClassPrivate -- Size: 0 bytes
+Registered: No
+
+Fields: 0
+
+
+Methods: 0
+
+
+Callback:
+    void                        TerminalSpawnAsyncCallback (
+                                  VteTerminal * terminal,
+                                  gint32 pid,
+                                  error * error,
+                                  void * user_data
+                                )
+
+
+
+
+Enum name: TextBlinkMode
+
+Values: 4
+  never     = 0
+  focused   = 1
+  unfocused = 2
+  always    = 3
+
+
+Methods: 0
+
+
+
+Enum name: WriteFlags
+
+Values: 1
+  default = 0
+
+
+Methods: 0
+
+
+Function:
+    gboolean                    vte_get_encoding_supported (char * encoding)
+
+
+
+Function:
+    array *                     vte_get_encodings (gboolean include_aliases)
+
+
+
+Function:
+    char *                      vte_get_features ()
+
+
+
+Function:
+    guint32                     vte_get_major_version ()
+
+
+
+Function:
+    guint32                     vte_get_micro_version ()
+
+
+
+Function:
+    guint32                     vte_get_minor_version ()
+
+
+
+Function:
+    filename *                  vte_get_user_shell ()
+
+
+
+Function:
+    guint32                     vte_pty_error_quark ()
+
+
+
+Function:
+    guint32                     vte_regex_error_quark ()
