@@ -1,19 +1,33 @@
 use v6.c;
 
+use Method::Also;
+
+use NativeCall;
+
 use VTE::Raw::Types;
 use VTE::Raw::Regex;
 
 # BOXED
 
 class VTE::Regex {
-  has VteRegex $!vt;
+  has VteRegex $!vr;
+
+  submethod BUILD (:$regex) {
+    $!vr = $regex;
+  }
+
+  method VTE::Raw::Definitions::VteRegex
+    is also<VteRegex>
+  { $!vr }
 
   method new_for_match (
     Str() $pattern,
     Int() $pattern_length,
     Int() $flags,
     CArray[Pointer[GError]] $error = gerror
-  ) {
+  )
+    is also<new-for-match>
+  {
     my gssize $p = $pattern_length;
     my guint32 $f = $flags;
 
@@ -29,7 +43,9 @@ class VTE::Regex {
     Int() $pattern_length,
     Int() $flags,
     CArray[Pointer[GError]] $error = gerror
-  ) {
+  )
+    is also<new-for-search>
+  {
     my gssize $p = $pattern_length;
     my guint32 $f = $flags;
 
@@ -73,11 +89,11 @@ class VTE::Regex {
   }
 
   # CLASS METHODS
-  method error_quark (VTE::Regex:U: ) {
+  method error_quark (VTE::Regex:U: ) is also<error-quark> {
     vte_regex_error_quark();
   }
 
-  method get_type {
+  method get_type is also<get-type> {
     state ($n, $t);
 
     unstable_get_type( self.^name, &vte_regex_get_type, $n, $t );

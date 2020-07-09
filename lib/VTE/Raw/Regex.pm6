@@ -65,7 +65,7 @@ sub vte_regex_substitute (
   guint32 $flags,
   CArray[Pointer[GError]] $error
 )
-  returns char
+  returns Str
   is native(vte)
   is export
 { * }
