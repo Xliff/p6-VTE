@@ -1,0 +1,3 @@
+prefix=VTE
+modules=VTE::Raw::Types
+backups=backup,google-backup,azure-backup
