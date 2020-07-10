@@ -1,0 +1,34 @@
+{
+    "depends": [
+        "p6-GtkPlus",
+    ],
+    "description": "Perl6 library bindings for Gnome's VTE 2 library",
+    "version": "r0.1",
+    "meta-version": "0",
+    "license": "GPL-3.0",
+    "source-url": "https://github.com/Xliff/p6-VTE",
+    "provides": {
+      "VTE::Raw::Exports"     :  "lib/VTE/Raw/Exports.pm6"     ,
+      "VTE::Raw::Definitions" :  "lib/VTE/Raw/Definitions.pm6" ,
+      "VTE::Raw::Types"       :  "lib/VTE/Raw/Types.pm6"       ,
+      "VTE::Types"            :  "lib/VTE/Types.pm6"           ,
+      "VTE::Raw::Pty"         :  "lib/VTE/Raw/Pty.pm6"         ,
+      "VTE::Raw::Regex"       :  "lib/VTE/Raw/Regex.pm6"       ,
+      "VTE::Raw::Terminal"    :  "lib/VTE/Raw/Terminal.pm6"    ,
+      "VTE::Regex"            :  "lib/VTE/Regex.pm6"           ,
+      "VTE::Pty"              :  "lib/VTE/Pty.pm6"             ,
+      "VTE::Terminal"         :  "lib/VTE/Terminal.pm6"
+    },
+    "name": "p6-VTE",
+    "perl": "6.c",
+    "test-depends": ["Test::META"],
+    "build-depends": [
+        "Text::Table::Simple",
+        "Dependency::Sort",
+        "Color",
+        "RandomColor",
+        "File::Find"
+    ],
+    "support": {"source": null},
+    "authors": ["clifton.wood@gmail.com"],
+}
