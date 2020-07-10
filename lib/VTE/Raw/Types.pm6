@@ -12,7 +12,7 @@ use VTE::Raw::Exports;
 
 my constant forced = 4;
 
-unit package GTK::Raw::Types;
+unit package VTE::Raw::Types;
 
 need Cairo;
 need GLib::Raw::Definitions;
