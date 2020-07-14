@@ -10,7 +10,7 @@ use GDK::Raw::Exports;
 use GTK::Raw::Exports;
 use VTE::Raw::Exports;
 
-my constant forced = 4;
+my constant forced = 5;
 
 unit package VTE::Raw::Types;
 
