@@ -38,14 +38,23 @@ class VTE::Regex {
     $regex ?? self.bless( :$regex ) !! Nil;
   }
 
-  method new_for_search (
+  proto method new_for_search (|)
+    is also<new-for-search>
+  { * }
+
+  multi method new_for_search (
+    Str $pattern,
+    Int() $flags,
+    CArray[Pointer[GError]] $error = gerror
+  ) {
+    samewith($pattern, $pattern.chars, $error);
+  }
+  multi method new_for_search (
     Str $pattern,
     Int() $pattern_length,
     Int() $flags,
     CArray[Pointer[GError]] $error = gerror
-  )
-    is also<new-for-search>
-  {
+  ) {
     my gssize $p = $pattern_length;
     my guint32 $f = $flags;
 
