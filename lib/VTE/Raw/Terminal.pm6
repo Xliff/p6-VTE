@@ -680,3 +680,22 @@ sub vte_terminal_set_encoding (
   is native(vte)
   is export
 { * }
+
+sub vte_terminal_spawn_sync(
+  VteTerminal $terminal,
+  VtePtyFlags $pty_flags,
+  Str $working_directory,
+  CArray[Str] $argv,
+  CArray[Str] $envv,
+  GSpawnFlags $spawn_flags,
+  &child_setup (Pointer),
+  Pointer $child_setup_data,
+  GPid $child_pid is rw,
+  GCancellable $cancellable,
+  CArray[Pointer[GError]] error
+)
+  returns gboolean
+  is DEPRECATED
+  is native(vte)
+  is export
+{ * }

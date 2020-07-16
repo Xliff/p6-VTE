@@ -332,13 +332,24 @@ class VTE::Terminal is GTK::Widget {
     vte_terminal_get_scrollback_lines($!vt);
   }
 
-  method get_size
+  # cw: IF, given as I suspect, get_size is actually resolution in pixels,
+  #     this method should return the number of text rows and columns!
+  # method get_rc is also<get-rc> {
+  #
+  #   self.get_size( :rev );
+  # }
+
+  method get_size ( :rev(:$reversed) = False )
     is also<
       get-size
       size
+      get_resolution
+      get-resolution
     >
   {
-    (self.get_row_count, self.get_column_count);
+    my @resolution = (self.get_column_count, self.get_row_count);
+
+    $reversed ?? @resolution !! @resolution.reverse;
   }
 
   method get_text (
@@ -792,6 +803,70 @@ class VTE::Terminal is GTK::Widget {
     is also<set-word-char-exceptions>
   {
     vte_terminal_set_word_char_exceptions($!vt, $exceptions);
+  }
+
+  proto method spawn_sync (|)
+    is also<spawn-sync>
+    is DEPRECATED
+  { * }
+
+  method spawn_sync (
+    Str() $working_directory,
+    @argv,
+    @envv,
+    Int() $spawn_flags            = G_SPAWN_DEFAULT,
+    Int() $pty_flags              = VTE_PTY_FLAGS_DEFAULT
+    &child_setup (Pointer)        = Callable,
+    Pointer $child_setup_data     = Pointer,
+    GCancellable $cancellable     = GCancellable,
+    CArray[Pointer[GError]] error = gerror
+  ) {
+    my $rv = samewith(
+      $pty_flags,
+      $working_directory,
+      resolve-gstrv(@argv),
+      resolve-gstrv(@envv),
+      $spawn_flags,
+      &child_setup,
+      $,
+      $cancellable,
+      $error
+    );
+
+    $rv[0] ?? $rv.skip(1) !! Nil;
+  }
+
+  method spawn_sync (
+    Int() $pty_flags,
+    Str() $working_directory,
+    CArray[Str] $argv,
+    CArray[Str] $envv,
+    Int() $spawn_flags,
+    &child_setup (Pointer),
+    Pointer $child_setup_data,
+    $child_pid is rw,
+    GCancellable $cancellable     = GCancellable,
+    CArray[Pointer[GError]] error = gerror
+  ) {
+    my VtePtyFlags $pf = $pty_flags;
+    my GSpawnFlags $sf = $spawn_flags;
+    my GPid $cpid = 0;
+
+    clear_error;
+    my $rv = so vte_termial_spawn_sync(
+      $pf,
+      $working_directory,
+      $argv,
+      $envv,
+      $sf,
+      &child_setup,
+      $cpid,
+      $cancellable,
+      $error
+    );
+    set_error($error);
+    $child-pid = $cpid;
+    $all.not ?? $rv !! ($rv, $child-pid);
   }
 
   proto method spawn_async (|)
