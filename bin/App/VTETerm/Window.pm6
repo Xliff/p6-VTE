@@ -4,6 +4,7 @@ use VTE::Raw::Types;
 
 use Pango::FontDescription;
 
+use GLib::Source;
 use GIO::PropertyAction;
 use GDK::Visual;
 use GTK::ApplicationWindow;
@@ -37,7 +38,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
   has Gtk::ToggleButton             $!find-button;
   has Gtk::MenuButton               $!gear-button;
 
-  has GPid                          $!child_pid;
+  has GPid                          $!child-pid;
   has GTK::Clipboard                $!clipboard;
   has VTE::Terminal                 $!terminal;
   has App::VTETerm::SearchPopover   $!search-popover;
@@ -125,12 +126,11 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
         say "NOTIFY property \"{ $psn }\" value { $!terminal."$psn"() }";
       }) if $OPTIONS.object-notifications;
 
-      .resize-window.tap(-> *@a ($t, $r, $c) {
+      .resize-window.tap(-> *@a ($, $w, $h) {
          return unless $r > 2 && $c > 2;
-         $!terminal.set-size($r, $c, :rev);
-         # cw: XXX
-         # self.resize-to-geometry() removed... do we need to use
-         # self.resize? If so, we need the char size.
+
+         $!terminal.set-size($w, $h);
+         self.resize($w, $h);
       });
 
       # ---
@@ -244,11 +244,58 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
   }
 
   method !adjust-font-size (Num() $factor) {
-    my ($r, $c) = $!terminal.get-size;
+    my @resolution = $!terminal.get-size;
     $!terminal.font-scale *= $factor;
 
     self!update_geometry()
-    #self.resize-to-geometry -- cw: use self.resize!s
+    self.resize( |@resolution );
+  }
+
+  method apply-geometry {
+    $!terminal.realize;
+
+    if $OPTIONS.geometry -> $g {
+      if self.parse-geometry($g) {
+        @s = self.get-default-size;
+        $!terminal.set-size( |@s );
+        self.resize( |@s );
+      } else {
+        $*ERR.say: "Failed to parse geometry spec '{ $OPTIONS.geometry }'";
+      }
+    } else {
+      self.set-default-geometry( |$!terminal.size );
+    }
+  }
+
+  method !launch-command(Str() $cmd) {
+    my token word {
+      "'" ( <-[\']>+ )+ "'" |
+      '"' ( <-[\"]>+ )+ '"' |
+      ( \S+ )
+    }
+
+    my rule token { [ <word> \s* ]+ }
+
+    my @argv = ($cmd ~~ &words)<word>».[0]».Str».[0];
+    my $launch-idle-id = GLib::Source.idle_add({
+      try {
+        CATCH {
+          when X::GLib::Error {
+            $*ERR.say: "Failed to fork: { .message }";
+          }
+        }
+
+        $!child-pid = $!terminal.spawn-sync(
+          $OPTIONS.working-working-directory,
+          @argv,
+          $OPTIONS.environment,
+          G_SPAWN_FLAGS_SEARCH_PATH,
+        );
+        say "Fork succeeded, PID { $!child-pid }";
+      }
+      $launch-idle-id = 0;
+      False.Int;
+    });
   }
 
   multi method show-context-menu {
