@@ -2,6 +2,8 @@ use v6.c;
 
 use VTE::Raw::Types;
 
+use Pango::FontDescription;
+
 use GIO::PropertyAction;
 use GDK::Visual;
 use GTK::ApplicationWindow;
@@ -131,6 +133,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
          # self.resize? If so, we need the char size.
       });
 
+      # ---
        .char-size-change.tap(-> *@a { self.update-geometry            });
            .child-exited.tap(-> *@a { self.handle-child-exited( |@a ) });
      .decrease-font-size.tap(-> *@a { self.adjust-font-size(1 / 1.2)  });
@@ -148,23 +151,104 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
                 .restore.tap(-> *@a { self.restore                    });
       .selection-changed.tap(-> *@a { self.update-copy-sensitivity    });
     .window-title-change.tap(-> *@a { self.title = $!terminal.title   });
+    # ---
 
-    $!terminal.double-buffered = $OPTIONS.no-double-buffer.not;
+    with $!terminal {
 
-    with $OPTIONS.encoding {
+      if $OPTIONS.encoding -> $e {
+        CATCH {
+          when X::GLib::Error {
+            $*ERR.say: "Failed to set encoding: { .message }";
+          }
+        }
+        $!terminal.encoding = $e;
+      }
+
+      if $OPTIONS.work-char-exceptions -> $wce {
+        $!terminal.word-char-exceptions = $wce;
+      }
+
+      .double-buffered     = $OPTIONS.no-double-buffer.not;
+      .rewrap-on-resize    = $OPTIONS.no-rewrap.not;
+      .audible-bell        = $OPTIONS.audible;
+      .cjk-ambiguous-width = $OPTIONS.cjk-ambiguous-width;
+      .cursor-shape        = $OPTIONS.cursor-shape;
+      .cursor-blink-mode   = $OPTIONS.cursor-blink-mode;
+      .mouse-autohide      = True;
+      .scroll-on-output    = True;
+      .scrollback-lines    = $OPTIONS.scrollback-lines;
+
+      if $OPTIONS.font-string -> $f {
+        .font = Pango::FontDescription.new-from-desc($f);
+      }
+
+      # ---
+                .set-colors( |$OPTIONS.get-colors           );
+         .set-cursor-colors( |$OPTIONS.get-cursor-colors    );
+      .set-highlight-colors( |$OPTIONS.get-highlight-colors );
+      # ---
+
+      self!add-dingus(@builtin-dingus) unless $OPTIONS.no-builtin-dingus;
+      if $OPTIONS.dingus -> $d {
+        self.add-dingus($d);
+      }
+
+      $!terminal-box.pack-start($!terminal);
+      $!terminal.show;
+
+      self.update-paste-sensitivity;
+      self.update-copy-sensitivity;
+
+      die 'Window could not be set to REALIZED state!' unless self.realized;
+    }
+
+  }
+
+  method !add-dingus(@dingus) {
+    my @cursors = (GDK_CURSOR_TYPE_GUMBY, GDK_CURSOR_TYPE_HAND1);
+
+    for @dingus.kv -> $k, $v {
       CATCH {
         when X::GLib::Error {
-          $*ERR.say: "Failed to set encoding: { .message }";
+          $*ERR.say: "Failed to compile regex '$v': { .message }";
         }
       }
-      $!terminal.encoding = $_;
-    }
 
-    with $OPTIONS.work-char-exceptions {
-      $!terminal.word-char-exceptions = $_;
-    }
+      my $tag = do if $OPTIONS.no-pcre.not {
+        my $rf = [+|]( PCRE2_UTF,
+                       PCRE2_NO_UTF_CHECK,
+                       PCRE2_CASELESS,
+                       PCRE2_MULTILINE );
 
-    # ...
+        my $regex = VTE::Regex.new-for-match($v, .chars, $rf);
+        try {
+          CATCH {
+            when X::GLib::Error {
+              $*ERR.say: "JITing regex '$v' failed: { .message }";
+            }
+          }
+          $regex.jit(PCRE2_JIT_COMPLETE);
+          $regex.jit(PCRE2_JIT_PARTIAL_SOFT);
+        }
+        $!terminal.match-add-regex($regex);
+      } else {
+        my $rf = [+|]( G_REGEX_COMPILE_FLAG_OPTIMIZE,
+                       G_REGEX_COMPILE_FLAG_MULTILINE );
+
+        my $regex = GLib::Regex.new($v, $rf);
+        $!terminal.match-add-gregex($regex);
+      }
+
+      $!terminal.match-set-cursor-type( $tag, @cursors[$k % @cursors.elems] );
+    }
+  }
+
+  method !adjust-font-size (Num() $factor) {
+    my ($r, $c) = $!terminal.get-size;
+    $!terminal.font-scale *= $factor;
+
+    self!update_geometry()
+    #self.resize-to-geometry -- cw: use self.resize!s
   }
 
   multi method show-context-menu {

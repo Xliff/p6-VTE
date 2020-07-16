@@ -9,15 +9,15 @@ class App::VTETerm::Options {
   has Str  @.environment                    = ();
   has Str  $.cjk-ambiguous-width-string     = ''    is rw;
   has Str  $.command                        = ''    is rw;
-  has Str  $.cursor-background-color-string = ''    is rw;
-  has Str  $.cursor-blink-mode-string       = ''    is rw;
-  has Str  $.cursor-foreground-color-string = ''    is rw;
-  has Str  $.cursor-shape-string            = ''    is rw;
+  has Str  $!cursor-background-color-string = ''    is rw;
+  has Str  $!cursor-blink-mode-string       = ''    is rw;
+  has Str  $!cursor-foreground-color-string = ''    is rw;
+  has Str  $!cursor-shape-string            = ''    is rw;
   has Str  $.encoding                       = ''    is rw;
   has Str  $.font-string                    = ''    is rw;
   has Str  $.geometry                       = ''    is rw;
-  has Str  $.hl-bg-color-string             = ''    is rw;
-  has Str  $.hl-fg-color-string             = ''    is rw;
+  has Str  $!hl-bg-color-string             = ''    is rw;
+  has Str  $!hl-fg-color-string             = ''    is rw;
   has Str  $.icon-title                     = ''    is rw;
   has Str  $.output-filename                = ''    is rw;
   has Str  $.word-char-exceptions           = ''    is rw;
@@ -52,22 +52,43 @@ class App::VTETerm::Options {
     $c;
   }
 
-  method get-color-cursor-background {
+  method get-colors {
+    (
+      self!get-color($!cursor-foreground-color-string),
+      self!get-color($!cursor-background-color-string)
+    )
+  }
+
+  method get-cursor-colors {
+    (
+      self.color-cursor-foreground,
+      self.color-cursor-background
+    )
+  }
+
+  method get-hl-colors {
+    (
+      self.color-hl-fg
+      self.color-hl-bg
+    )
+  }
+
+  method color-cursor-background {
     self!get-color($!cursor-background-color-string);
   }
 
-  method get-color-cursor-foreground {
+  method color-cursor-foreground {
     self!get-color($!cursor-foreground-color-string);
   }
 
-  method get-color-hl-bg { self!get-color($!hl-bg-color-string) }
-  method get-color-hl-fg { self!get-color($!hl-fg-color-string) }
+  method color-hl-bg { self!get-color($!hl-bg-color-string) }
+  method color-hl-fg { self!get-color($!hl-fg-color-string) }
 
-  method get-cursor-blink-mode {
+  method cursor-blink-mode {
     getEnumValueByNick(VteCursorBlinkModeEnum, $!cursor-blink-mode-string);
   }
 
-  method get-cursor-shape {
+  method cursor-shape {
     getEnumValueByNick(VteCursorShapeEnum, $!cursor-cursor-shape-string);
   }
 }
