@@ -661,3 +661,22 @@ sub vte_terminal_write_contents_sync (
   is native(vte)
   is export
 { * }
+
+# Deprecated
+sub vte_terminal_get_encoding (VteTerminal $terminal)
+  returns Str
+  is DEPRECATED
+  is native(vte)
+  is export
+{ * }
+
+sub vte_terminal_set_encoding (
+  VteTerminal $terminal,
+  Str $codeset,
+  CArray[Pointer[GError]] $error
+)
+  returns gboolean
+  is DEPRECATED
+  is native(vte)
+  is export
+{ * }

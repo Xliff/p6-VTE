@@ -51,6 +51,18 @@ class VTE::Terminal is GTK::Widget {
     $terminal ?? self.bless( :$terminal ) !! Nil;
   }
 
+  method encoding is rw {
+    Proxy.new:
+      FETCH => -> $         { self.get_encoding    },
+      STORE => -> $, Str \e { self.set_encoding(e) };
+  }
+
+  method word-char-exceptions is rw is also<word_char_exceptions> {
+    Proxy.new:
+      FETCH => -> $        { self.get_word_char_exceptions     },
+      STORE => -> $ Str \e { self.set_word_char_exceptions(e)  };
+  }
+
   method copy_clipboard_format (Int() $format) is also<copy-clipboard-format> {
     my VteFormat $f = $format;
 
@@ -311,7 +323,14 @@ class VTE::Terminal is GTK::Widget {
     unstable_get_type( self.^name, &vte_terminal_get_type, $n, $t );
   }
 
-  method get_window_title is also<get-window-title> {
+  method get_window_title
+    is also<
+      get-window-title
+      winow_title
+      window-title
+      title
+    >
+  {
     vte_terminal_get_window_title($!vt);
   }
 
@@ -759,4 +778,21 @@ class VTE::Terminal is GTK::Widget {
 
     vte_terminal_write_contents_sync($!vt, $stream, $f, $cancellable, $error);
   }
+
+  method get_encoding is also<get-encoding> {
+    vte_terminal_get_encoding($!vt)
+  }
+
+  method set_encoding (
+    Str() $codeset,
+    CArray[Pointer[GError]] $error = gerror
+  )
+    is also<set-encoding>
+  {
+    clear_error;
+    my $rv = so vte_terminal_set_encoding($!vt, $codeset, $error);
+    set_error($error);
+    $rv;
+  }
+
 }
