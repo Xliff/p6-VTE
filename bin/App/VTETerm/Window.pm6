@@ -106,7 +106,118 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
       self.app-paintable = True;
     }
 
-     # Signals 
+    # Signals
+    with $!terminal {
+      .popup-menu-connect.tap(-> *@a { self.show-context-menu });
+
+      .button-press-event.tap(-> *@a {
+        my $e = GDK::Event.new( @a[1] )
+        @a[* - 1].r = 0 unless $e.typed-event.button == 3;
+        @a[* - 1].r = self.show-context-menu($e.button, $e.time, $e);
+      });
+
+      .notify.tap(-> *@a {
+        my $ps = GLib::Object::ParamSpec.new( @a[1] );
+        my $psn = $ps.name;
+        return unless $ps.owner-type == $!terminal.get-type;
+        say "NOTIFY property \"{ $psn }\" value { $!terminal."$psn"() }";
+      }) if $OPTIONS.object-notifications;
+
+      .resize-window.tap(-> *@a ($t, $r, $c) {
+         return unless $r > 2 && $c > 2;
+         $!terminal.set-size($r, $c, :rev);
+         # cw: XXX
+         # self.resize-to-geometry() removed... do we need to use
+         # self.resize? If so, we need the char size.
+      });
+
+       .char-size-change.tap(-> *@a { self.update-geometry            });
+           .child-exited.tap(-> *@a { self.handle-child-exited( |@a ) });
+     .decrease-font-size.tap(-> *@a { self.adjust-font-size(1 / 1.2)  });
+       .deiconify-window.tap(-> *@a { self.deiconify                  });
+     .icon-title-changed.tap(-> *@a { self.window.icon_name =
+                                      $!terminal.icon-title           });
+         .iconify-window.tap(-> *@a { self.adjust-font-size(1.2)      });
+           .lower-window.tap(-> *@a { return unless self.realized;
+                                      self.window.lower               });
+        .maximize-window.tap(-> *@a { self.maximize                   });
+            .move-window.tap(-> *@a { self.move( |@a.skip(1) )        });
+           .raise-window.tap(-> *@a { return unless self.realized;
+                                      self.window.raise               });
+         .refresh-window.tap(-> *@a { self.queue-draw                 });
+                .restore.tap(-> *@a { self.restore                    });
+      .selection-changed.tap(-> *@a { self.update-copy-sensitivity    });
+    .window-title-change.tap(-> *@a { self.title = $!terminal.title   });
+
+    $!terminal.double-buffered = $OPTIONS.no-double-buffer.not;
+
+    with $OPTIONS.encoding {
+      CATCH {
+        when X::GLib::Error {
+          $*ERR.say: "Failed to set encoding: { .message }";
+        }
+      }
+      $!terminal.encoding = $_;
+    }
+
+    with $OPTIONS.work-char-exceptions {
+      $!terminal.word-char-exceptions = $_;
+    }
+
+    # ...
+  }
+
+  multi method show-context-menu {
+    samewith(0, GDK::Event.time);
+  }
+  multi method show-context-menu (
+    Int() $button,
+    Int() $timestamp,
+    GdkEvent() $event = GdkEvent
+    --> Int
+  ) {
+    return 0 unless $OPTIONS.no-context-menu;
+
+    my $menu = GLib::Menu;
+    $menu.append('_Copy', 'win.copy::text');
+    $menu.append('Copy As _HTML', 'win.copy::html');
+
+    if $event {
+      if $!terminal.hyperlink-check-event($event) -> $hyperlink {
+        $menu.append('Copy _Hyperlink', 'win.copy-match::' ~ $hyperlink)
+      }
+      if $!terminal.match_check_event($event) -> $match {
+        $menu.append('Copy _Match', 'win.copy-match::' ~ $match);
+      }
+    }
+    $menu,.append('_Paste');
+
+    my $popup = GTK::Menu.new($menu, :model);
+    $popup.attach-to-widget(self);
+    $popup.popup-at-pointer;
+    $popup.select-first unless $button;
+    1;
+  }
+
+  multi handle-child-exited ($t, $s) {
+    $*ERR.say: "Child exited with status { $s.fmt('%x') }";
+
+    if $OPTIONS.output-filename -> $fn {
+      try {
+        CATCH {
+          default {
+            $*ERR.say: "Failed to write output to { $fn } { .message }"
+          }
+        }
+        with GIO::Roles::GFile.new-for-commandline-arg($fn) {
+          $!terminal.write-contents-sync($_) with .replace;
+        }
+      }
+    }
+
+    return unless $OPTIONS.keep;
+
+    self.destroy;
   }
 
 }
