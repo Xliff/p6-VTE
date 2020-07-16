@@ -3,7 +3,6 @@ use v6.c;
 use Method::Also;
 
 use NativeCall;
-
 use VTE::Raw::Types;
 use VTE::Raw::Terminal;
 
@@ -51,16 +50,82 @@ class VTE::Terminal is GTK::Widget {
     $terminal ?? self.bless( :$terminal ) !! Nil;
   }
 
+  method allow-hyperlink is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_allow_hyperlink    },
+      STORE => -> $, Int() \b { self.set_allow_hyperlink(b) };
+  }
+
+  method audible-bell is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_audible_bell    },
+      STORE => -> $, Int() \b { self.set_audible_bell(b) };
+  }
+
+  method cjk-ambiguous-width is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_cjk_ambiguous_width    },
+      STORE => -> $, Int() \i { self.set-cjk-ambiguous-width(i) };
+  }
+
+  method cursor-blink-mode is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_cursor_blink_mode    },
+      STORE => -> $, Int() \i { self.set_cursor_blink_mode(i) };
+  }
+
+  method cursor-shape is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_cursor_shape    },
+      STORE => -> $, Int() \i { self.set_cursor_shape(i) };
+  }
+
   method encoding is rw {
     Proxy.new:
-      FETCH => -> $         { self.get_encoding    },
-      STORE => -> $, Str \e { self.set_encoding(e) };
+      FETCH => -> $           { self.get_encoding    },
+      STORE => -> $, Str() \e { self.set_encoding(e) };
+  }
+
+  method font-scale is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_font_scale    },
+      STORE => -> $, Num() \n { self.set-font-scale(n) };
+  }
+
+  method mouse-autohide is rw {
+    Proxy.new:
+      FETCH => -> $           { self.mouse_autohide    },
+      STORE => -> $, Int() \i { self.mouse_autohide(i) };
+  }
+
+  method rewrap-on-resize is rw {
+    Proxy.new:
+      FETCH => -> $           { self.rewrap_on_resize    },
+      STORE => -> $, Int() \i { self.rewrap_on_resize(i) };
+  }
+
+  method scroll-on-output is rw {
+    Proxy.new:
+      FETCH => -> $           { self.scroll_on_output    },
+      STORE => -> $, Int() \i { self.scroll_on_output(i) };
+  }
+
+  method scroll-on-keystroke is rw {
+    Proxy.new:
+      FETCH => -> $           { self.scroll_on_keystroke    },
+      STORE => -> $, Int() \i { self.scroll_on_keystroke(i) };
+  }
+
+  method scrollback-lines is rw {
+    Proxy.new:
+      FETCH => -> $           { self.scrollback_lines    },
+      STORE => -> $, Int() \i { self.scrollback_lines(i) };
   }
 
   method word-char-exceptions is rw is also<word_char_exceptions> {
     Proxy.new:
-      FETCH => -> $        { self.get_word_char_exceptions     },
-      STORE => -> $ Str \e { self.set_word_char_exceptions(e)  };
+      FETCH => -> $           { self.get_word_char_exceptions     },
+      STORE => -> $, Str() \e { self.set_word_char_exceptions(e)  };
   }
 
   method copy_clipboard_format (Int() $format) is also<copy-clipboard-format> {
@@ -243,7 +308,15 @@ class VTE::Terminal is GTK::Widget {
       Nil;
   }
 
-  method get_row_count is also<get-row-count> {
+  method get_row_count
+    is also<
+      get-row-count
+      row_count
+      row-count
+      rows
+      r-elems
+    >
+  {
     vte_terminal_get_row_count($!vt);
   }
 
@@ -259,11 +332,22 @@ class VTE::Terminal is GTK::Widget {
     vte_terminal_get_scrollback_lines($!vt);
   }
 
+  method get_size
+    is also<
+      get-size
+      size
+    >
+  {
+    (self.get_row_count, self.get_column_count);
+  }
+
   method get_text (
     &is_selected,
     gpointer $user_data,
     GArray() $attributes
-  ) is also<get-text> {
+  )
+    is also<get-text>
+  {
     vte_terminal_get_text($!vt, &is_selected, $user_data, $attributes);
   }
 
@@ -527,6 +611,22 @@ class VTE::Terminal is GTK::Widget {
     vte_terminal_set_color_bold($!vt, $bold);
   }
 
+  method set_cursor_colors (
+    GdkRGBA $foreground,
+    GdkRGBA $background
+  ) {
+    self.set_color_cursor($background);
+    self.set_color_cursor_foreground($foreground);
+  }
+
+  method set_highlight_colors (
+    GdkRGBA $foreground,
+    GdkRGBA $background
+  ) {
+    self.set_color_highlight($background);
+    self.set_color_highlight_foreground($foreground);
+  }
+
   method set_color_cursor (GdkRGBA $cursor_background)
     is also<set-color-cursor>
   {
@@ -561,6 +661,12 @@ class VTE::Terminal is GTK::Widget {
       is also<set-colors>
   { * }
 
+  multi method set_colors (
+    GdkRGBA $foreground,
+    GdkRGBA $background
+  ) {
+    samewith($foreground, $background, Pointer, 0);
+  }
   multi method set_colors (
     GdkRGBA $foreground,
     GdkRGBA $background,
