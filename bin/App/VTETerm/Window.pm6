@@ -14,6 +14,7 @@ use GTK::MenuButton;
 use GTK::Scrollbar;
 use GTK::ToggleButton;
 use GTK::Widget;
+use VTE::Global;
 use VTE::Terminal;
 use App::VTETerm::SearchPopover;
 use App::VTETerm::Options;
@@ -134,13 +135,13 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
       });
 
       # ---
-       .char-size-change.tap(-> *@a { self.update-geometry            });
-           .child-exited.tap(-> *@a { self.handle-child-exited( |@a ) });
-     .decrease-font-size.tap(-> *@a { self.adjust-font-size(1 / 1.2)  });
+       .char-size-change.tap(-> *@a { self!update-geometry            });
+           .child-exited.tap(-> *@a { self!handle-child-exited( |@a ) });
+     .decrease-font-size.tap(-> *@a { self!adjust-font-size(1 / 1.2)  });
        .deiconify-window.tap(-> *@a { self.deiconify                  });
      .icon-title-changed.tap(-> *@a { self.window.icon_name =
                                       $!terminal.icon-title           });
-         .iconify-window.tap(-> *@a { self.adjust-font-size(1.2)      });
+         .iconify-window.tap(-> *@a { self!adjust-font-size(1.2)      });
            .lower-window.tap(-> *@a { return unless self.realized;
                                       self.window.lower               });
         .maximize-window.tap(-> *@a { self.maximize                   });
@@ -149,7 +150,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
                                       self.window.raise               });
          .refresh-window.tap(-> *@a { self.queue-draw                 });
                 .restore.tap(-> *@a { self.restore                    });
-      .selection-changed.tap(-> *@a { self.update-copy-sensitivity    });
+      .selection-changed.tap(-> *@a { self!update-copy-sensitivity    });
     .window-title-change.tap(-> *@a { self.title = $!terminal.title   });
     # ---
 
@@ -298,6 +299,68 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
     });
   }
 
+  method !launch-shell {
+    self!launch-command(
+      VTE::Global.get-user-shell // %ENV<SHELL> // '/bin/sh'
+    );
+  }
+
+  method !launch-promise {
+    my $pty = VTE::PTY.new( :sync );
+    my $p = start {
+      $pty.child-setup;
+      my $i = 0;
+      repeat {
+        given $i % 3 {
+          when 0 | 1 { say $i       }
+          when 2     { $*ERR.say: $i }
+        }
+        sleep 1;
+      }
+    }
+    $!terminal.pty = $pty;
+    say "Child started via promise. My PID is $*PID";
+    $p.Supply.tap(-> $r { say "Child exited with result: { $r }" });
+  }
+
+  method launch {
+    CATCH {
+      when X::GLib::Error {
+        $*ERR.say: "Error: { .message }";
+      }
+    }
+
+    with   $OPTIONS.command      { self!launch-command($_) }
+    elsif  $OPTIONS.no-shell.not { self!launch-shell       }
+    else                         { self!launch-promise     }
+  }
+
+  method !update-copy-sensitivity {
+    GLib::SimpleAction.new( self.lookup-action('copy', :raw) ).enabled =
+      $!terminal.has-selection
+  }
+
+  method !update-paste-sensitivity {
+    GLib::SimpleAction.new( self.lookup-action('paste', :raw) ).enabled = do {
+      if $!clipboard.wait-for-targets -> $t {
+        $t.targets-include-text;
+      } else {
+        False;
+      }
+    }
+  }
+
+  method !update-geometry {
+    return unless $OPTIONS.no-geometry-hints || $!terminal.realized;
+    $!terminal.set-geometry-hints(self, [+|](
+      GDK_HINT_BASE_SIZE,
+      GDK_HINT_MIN_SIZE,
+      GDK_HINT_MAX_SIZE,
+      GDK_HINT_ASPECT,
+      GDK_HINT_RESIZE_INC
+    );
+  }
+
   multi method show-context-menu {
     samewith(0, GDK::Event.time);
   }
@@ -321,7 +384,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
         $menu.append('Copy _Match', 'win.copy-match::' ~ $match);
       }
     }
-    $menu,.append('_Paste');
+    $menu.append('_Paste');
 
     my $popup = GTK::Menu.new($menu, :model);
     $popup.attach-to-widget(self);
@@ -330,7 +393,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
     1;
   }
 
-  multi handle-child-exited ($t, $s) {
+  method handle-child-exited ($t, $s) {
     $*ERR.say: "Child exited with status { $s.fmt('%x') }";
 
     if $OPTIONS.output-filename -> $fn {
