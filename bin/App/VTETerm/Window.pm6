@@ -1,11 +1,12 @@
 use v6.c;
 
-use VTE::Raw::Types;
+use App::Compat::PCRE;
 
-use Pango::FontDescription;
+use VTE::Raw::Types;
 
 use GLib::Source;
 use GIO::PropertyAction;
+use Pango::FontDescription;
 use GDK::Visual;
 use GTK::ApplicationWindow;
 use GTK::Box;
@@ -15,32 +16,29 @@ use GTK::MenuButton;
 use GTK::Scrollbar;
 use GTK::ToggleButton;
 use GTK::Widget;
+
 use VTE::Global;
-use VTE::PTY;
+use VTE::Pty;
 use VTE::Regex;
 use VTE::Terminal;
 use App::VTETerm::SearchPopover;
 use App::VTETerm::Options;
 
-my @action-entries = (
-  GActionEntry.new('copy',       &action_copy_cb,       's' ),
-  GActionEntry.new('copy-match', &action_copy_match_cb, 's' ),
-  GActionEntry.new('paste',      &action_paste_cb           ),
-  GActionEntry.new('reset',      &action_reset_cb,      'b' ),
-  GActionEntry.new('find',       &action_find_cb            ),
-  GActionEntry.new('quit',       &action_quit_cb            )
+my @builtin-dingus = (
+  '(((gopher|news|telnet|nntp|file|http|ftp|https)://)|(www|ftp)[-A-Za-z0-9]*\\.)[-A-Za-z0-9\\.]+(:[0-9]*)?',
+  '(((gopher|news|telnet|nntp|file|http|ftp|https)://)|(www|ftp)[-A-Za-z0-9]*\\.)[-A-Za-z0-9\\.]+(:[0-9]*)?/[-A-Za-z0-9_\\$\\.\\+\\!\\*\\(\\),;:@&=\\?/~\\#\\%]*[^]\'\\.\}>\\) ,\\\']'
 );
 
 #| %%ui = ui/window.ui
 class App::VTETerm::Window is GTK::ApplicationWindow {
-  has Gtk::Scrollbar                $!scrollbar;
-  has Gtk::Box                      $!terminal_box;
-  #has Gtk::Box                      $!notifications-box;
-  has Gtk::Widget                   $!readonly-emblem;
-  #has Gtk::Button                   $!copy_button;
-  #has Gtk::Button                   $!paste_button;
-  has Gtk::ToggleButton             $!find-button;
-  has Gtk::MenuButton               $!gear-button;
+  has GTK::Scrollbar                $!scrollbar;
+  has GTK::Box                      $!terminal-box;
+  #has GTK::Box                      $!notifications-box;
+  has GTK::Widget                   $!readonly-emblem;
+  #has GTK::Button                   $!copy_button;
+  #has GTK::Button                   $!paste_button;
+  has GTK::ToggleButton             $!find-button;
+  has GTK::MenuButton               $!gear-button;
 
   has GPid                          $!child-pid;
   has GTK::Clipboard                $!clipboard;
@@ -48,29 +46,24 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
   has App::VTETerm::SearchPopover   $!search-popover;
   has                               $!launch-idle-id;
 
-  has @!builtin-dingus = (
-    '(((gopher|news|telnet|nntp|file|http|ftp|https)://)|(www|ftp)[-A-Za-z0-9]*\\.)[-A-Za-z0-9\\.]+(:[0-9]*)?',
-    '(((gopher|news|telnet|nntp|file|http|ftp|https)://)|(www|ftp)[-A-Za-z0-9]*\\.)[-A-Za-z0-9\\.]+(:[0-9]*)?/[-A-Za-z0-9_\\$\\.\\+\\!\\*\\(\\),;:@&=\\?/~\\#\\%]*[^]\'\\.\}>\\) ,\\\']'
-  );
-
   submethod BUILD {
     $!terminal = VTE::Terminal.new;
     if $OPTIONS.extra-margin -> $m {
       $!terminal.margins = $m;
     }
-    $!scrollbar.adjustment = $!terminal.vadjustment
+    $!scrollbar.adjustment = $!terminal.vadjustment;
 
-    self.add-action-entries($action_entries);
+    self.add-action-entries(self!create-action-entries);
 
     my $action = GIO::PropertyAction.new('input-enable', $!terminal);
-    add-action($action);
+    self.add-action($action);
     $action.notify('state').tap(-> *@a {
       my $a = GIO::Roles::Action.new_action_object( cast(GAction, @a[0]) );
-      $!readonly_emblem.visible = $a.state.boolean.not;
+      $!readonly-emblem.visible = $a.state.boolean.not;
     });
 
     $!search-popover = App::VTETerm::SearchPopover.new(
-      $terminal,
+      $!terminal,
       $!find-button
     );
     $!search-popover.closed.tap({
@@ -100,7 +93,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
     $!gear-button.menu-model = $menu;
 
     $!clipboard = GTK::Clipboard.get(GDK_SELECTION_CLIPBOARD);
-    $!clipboard.owner-change.tap(-> *@a { update-paste-sensitivity });
+    $!clipboard.owner-change.tap(-> *@a { self!update-paste-sensitivity });
 
     self.title = 'Terminal';
 
@@ -118,7 +111,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
       .popup-menu-connect.tap(-> *@a { self.show-context-menu });
 
       .button-press-event.tap(-> *@a {
-        my $e = GDK::Event.new( @a[1] )
+        my $e = GDK::Event.new( @a[1] );
         @a[* - 1].r = 0 unless $e.typed-event.button == 3;
         @a[* - 1].r = self.show-context-menu($e.button, $e.time, $e);
       });
@@ -131,37 +124,35 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
       }) if $OPTIONS.object-notifications;
 
       .resize-window.tap(-> *@a ($, $w, $h) {
-         return unless $r > 2 && $c > 2;
+         return unless $w > 2 && $h > 2;
 
          $!terminal.set-size($w, $h);
          self.resize($w, $h);
       });
 
       # ---
-       .char-size-change.tap(-> *@a { self!update-geometry            });
-           .child-exited.tap(-> *@a { self!handle-child-exited( |@a ) });
-     .decrease-font-size.tap(-> *@a { self!adjust-font-size(1 / 1.2)  });
-       .deiconify-window.tap(-> *@a { self.deiconify                  });
-     .icon-title-changed.tap(-> *@a { self.window.icon_name =
-                                      $!terminal.icon-title           });
-         .iconify-window.tap(-> *@a { self!adjust-font-size(1.2)      });
-           .lower-window.tap(-> *@a { return unless self.realized;
-                                      self.window.lower               });
-        .maximize-window.tap(-> *@a { self.maximize                   });
-            .move-window.tap(-> *@a { self.move( |@a.skip(1) )        });
-           .raise-window.tap(-> *@a { return unless self.realized;
-                                      self.window.raise               });
-         .refresh-window.tap(-> *@a { self.queue-draw                 });
-                .restore.tap(-> *@a { self.restore                    });
-      .selection-changed.tap(-> *@a { self!update-copy-sensitivity    });
-    .window-title-change.tap(-> *@a { self.title = $!terminal.title   });
-    # ---
-
-    with $!terminal {
+         .char-size-change.tap(-> *@a { self!update-geometry            });
+             .child-exited.tap(-> *@a { self!handle-child-exited( |@a ) });
+       .decrease-font-size.tap(-> *@a { self!adjust-font-size(1 / 1.2)  });
+         .deiconify-window.tap(-> *@a { self.deiconify                  });
+       .icon-title-changed.tap(-> *@a { self.window.icon_name =
+                                        $!terminal.icon-title           });
+           .iconify-window.tap(-> *@a { self!adjust-font-size(1.2)      });
+             .lower-window.tap(-> *@a { return unless self.realized;
+                                        self.window.lower               });
+          .maximize-window.tap(-> *@a { self.maximize                   });
+              .move-window.tap(-> *@a { self.move( |@a.skip(1) )        });
+             .raise-window.tap(-> *@a { return unless self.realized;
+                                        self.window.raise               });
+           .refresh-window.tap(-> *@a { self.queue-draw                 });
+                  .restore.tap(-> *@a { self.restore                    });
+        .selection-changed.tap(-> *@a { self!update-copy-sensitivity    });
+      .window-title-change.tap(-> *@a { self.title = $!terminal.title   });
+      # ---
 
       if $OPTIONS.encoding -> $e {
         CATCH {
-          when X::GLib::Error {
+          when X::GLib::GError {
             $*ERR.say: "Failed to set encoding: { .message }";
           }
         }
@@ -200,8 +191,8 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
       $!terminal-box.pack-start($!terminal);
       $!terminal.show;
 
-      self.update-paste-sensitivity;
-      self.update-copy-sensitivity;
+      self!update-paste-sensitivity;
+      self!update-copy-sensitivity;
 
       die 'Window could not be set to REALIZED state!' unless self.realized;
     }
@@ -209,11 +200,11 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
   }
 
   method !add-dingus(@dingus) {
-    my @cursors = (GDK_CURSOR_TYPE_GUMBY, GDK_CURSOR_TYPE_HAND1);
+    my @cursors = (GDK_GUMBY, GDK_HAND1);
 
     for @dingus.kv -> $k, $v {
       CATCH {
-        when X::GLib::Error {
+        when X::GLib::GError {
           $*ERR.say: "Failed to compile regex '$v': { .message }";
         }
       }
@@ -227,7 +218,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
         my $regex = VTE::Regex.new-for-match($v, .chars, $rf);
         try {
           CATCH {
-            when X::GLib::Error {
+            when X::GLib::GError {
               $*ERR.say: "JITing regex '$v' failed: { .message }";
             }
           }
@@ -236,8 +227,8 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
         }
         $!terminal.match-add-regex($regex);
       } else {
-        my $rf = [+|]( G_REGEX_COMPILE_FLAG_OPTIMIZE,
-                       G_REGEX_COMPILE_FLAG_MULTILINE );
+        my $rf = [+|]( G_REGEX_OPTIMIZE,
+                       G_REGEX_MULTILINE );
 
         my $regex = GLib::Regex.new($v, $rf);
         $!terminal.match-add-gregex($regex);
@@ -247,11 +238,56 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
     }
   }
 
+  method !create-action-entries {
+
+    sub action-copy-cb (GSimpleAction $a, GVariant $p) {
+      my $str = GLib::Variant.new($p).get-string;
+      $!terminal.copy-clipboard-format(
+        $str eq 'html' ?? VTE_FORMAT_HTML !! VTE_FORMAT_TEXT
+      );
+    }
+
+    sub action-copy-match-cb(GSimpleAction $a, GVariant $b) {
+      $!clipboard.text = GLib::Variant.new($b).string;
+    }
+
+    sub action-paste-cb (GSimpleAction $a, GVariant $b) {
+      $!terminal.paste-clipboard;
+    }
+
+    sub action-reset-cb (GSimpleAction $a, GVariant $b) {
+      $!terminal.reset(True, do if GLib::Variant.new($b) -> $v {
+        $v.boolean;
+      } elsif GTK::Get.current-event-state -> $m {
+        so $m +& GDK_CONTROL_MASK;
+      } else {
+        False
+      });
+    }
+
+    sub action-find-cb (GSimpleAction $a, GVariant $b) {
+      $!find-button.active = True;
+    }
+
+    sub action-quit-cb (GSimpleAction $a, GVariant $b) {
+      self.destroy;
+    }
+
+    (
+      GActionEntry.new('copy',       &action-copy-cb,       's' ),
+      GActionEntry.new('copy-match', &action-copy-match-cb, 's' ),
+      GActionEntry.new('paste',      &action-paste-cb           ),
+      GActionEntry.new('reset',      &action-reset-cb,      'b' ),
+      GActionEntry.new('find',       &action-find-cb            ),
+      GActionEntry.new('quit',       &action-quit-cb            )
+    );
+  }
+
   method !adjust-font-size (Num() $factor) {
     my @resolution = $!terminal.get-size;
     $!terminal.font-scale *= $factor;
 
-    self!update_geometry()
+    self!update-geometry;
     self.resize( |@resolution );
   }
 
@@ -260,7 +296,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
 
     if $OPTIONS.geometry -> $g {
       if self.parse-geometry($g) {
-        @s = self.get-default-size;
+        my @s = self.get-default-size;
         $!terminal.set-size( |@s );
         self.resize( |@s );
       } else {
@@ -284,7 +320,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
     my $launch-idle-id = GLib::Source.idle_add({
       try {
         CATCH {
-          when X::GLib::Error {
+          when X::GLib::GError {
             $*ERR.say: "Failed to fork: { .message }";
           }
         }
@@ -293,7 +329,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
           $OPTIONS.working-working-directory,
           @argv,
           $OPTIONS.environment,
-          G_SPAWN_FLAGS_SEARCH_PATH,
+          G_SPAWN_SEARCH_PATH,
         );
         say "Fork succeeded, PID { $!child-pid }";
       }
@@ -304,16 +340,16 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
 
   method !launch-shell {
     self!launch-command(
-      VTE::Global.get-user-shell // %ENV<SHELL> // '/bin/sh'
+      VTE::Global.get-user-shell // %*ENV<SHELL> // '/bin/sh'
     );
   }
 
   method !launch-promise {
-    my $pty = VTE::PTY.new( :sync );
+    my $pty = VTE::Pty.new( :sync );
     my $p = start {
       $pty.child-setup;
       my $i = 0;
-      repeat {
+      loop {
         given $i % 3 {
           when 0 | 1 { say $i       }
           when 2     { $*ERR.say: $i }
@@ -328,7 +364,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
 
   method launch {
     CATCH {
-      when X::GLib::Error {
+      when X::GLib::GError {
         $*ERR.say: "Error: { .message }";
       }
     }
@@ -361,7 +397,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
       GDK_HINT_MAX_SIZE,
       GDK_HINT_ASPECT,
       GDK_HINT_RESIZE_INC
-    );
+    ));
   }
 
   multi method show-context-menu {
@@ -396,7 +432,7 @@ class App::VTETerm::Window is GTK::ApplicationWindow {
     1;
   }
 
-  method handle-child-exited ($t, $s) {
+  method !handle-child-exited ($t, $s) {
     $*ERR.say: "Child exited with status { $s.fmt('%x') }";
 
     if $OPTIONS.output-filename -> $fn {
