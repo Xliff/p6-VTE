@@ -1,8 +1,8 @@
 use v6.c;
 
+use NativeCall;
 use Method::Also;
 
-use NativeCall;
 use VTE::Raw::Types;
 use VTE::Raw::Terminal;
 
@@ -810,16 +810,36 @@ class VTE::Terminal is GTK::Widget {
     is DEPRECATED
   { * }
 
-  method spawn_sync (
+  multi method spawn_sync (
     Str() $working_directory,
     @argv,
     @envv,
-    Int() $spawn_flags            = G_SPAWN_DEFAULT,
-    Int() $pty_flags              = VTE_PTY_FLAGS_DEFAULT
-    &child_setup (Pointer)        = Callable,
-    Pointer $child_setup_data     = Pointer,
-    GCancellable $cancellable     = GCancellable,
-    CArray[Pointer[GError]] error = gerror
+    &child_setup (Pointer)         = Callable,
+    Pointer $child_setup_data      = Pointer,
+    GCancellable $cancellable      = GCancellable,
+    CArray[Pointer[GError]] $error = gerror
+  ) {
+    samewith(
+      $working_directory,
+      resolve-gstrv(@argv),
+      resolve-gstrv(@envv),
+      G_SPAWN_DEFAULT,
+      VTE_PTY_DEFAULT,
+      $,
+      $cancellable,
+      $error
+    );
+  }
+  multi method spawn_sync (
+    Str() $working_directory,
+    @argv,
+    @envv,
+    Int() $spawn_flags             = G_SPAWN_DEFAULT,
+    Int() $pty_flags               = VTE_PTY_DEFAULT,
+    &child_setup (Pointer)         = Callable,
+    Pointer $child_setup_data      = Pointer,
+    GCancellable $cancellable      = GCancellable,
+    CArray[Pointer[GError]] $error = gerror
   ) {
     my $rv = samewith(
       $pty_flags,
@@ -836,7 +856,7 @@ class VTE::Terminal is GTK::Widget {
     $rv[0] ?? $rv.skip(1) !! Nil;
   }
 
-  method spawn_sync (
+  multi method spawn_sync (
     Int() $pty_flags,
     Str() $working_directory,
     CArray[Str] $argv,
@@ -845,15 +865,16 @@ class VTE::Terminal is GTK::Widget {
     &child_setup (Pointer),
     Pointer $child_setup_data,
     $child_pid is rw,
-    GCancellable $cancellable     = GCancellable,
-    CArray[Pointer[GError]] error = gerror
+    GCancellable $cancellable      = GCancellable,
+    CArray[Pointer[GError]] $error = gerror,
+    :$all = False
   ) {
     my VtePtyFlags $pf = $pty_flags;
     my GSpawnFlags $sf = $spawn_flags;
     my GPid $cpid = 0;
 
     clear_error;
-    my $rv = so vte_termial_spawn_sync(
+    my $rv = so vte_terminal_spawn_sync(
       $pf,
       $working_directory,
       $argv,
@@ -865,8 +886,8 @@ class VTE::Terminal is GTK::Widget {
       $error
     );
     set_error($error);
-    $child-pid = $cpid;
-    $all.not ?? $rv !! ($rv, $child-pid);
+    $child_pid = $cpid;
+    $all.not ?? $rv !! ($rv, $child_pid);
   }
 
   proto method spawn_async (|)
@@ -878,22 +899,50 @@ class VTE::Terminal is GTK::Widget {
     Str() $working_directory,
     @argv,
     @envv,
-    Int() $spawn_flags,
-    GSpawnChildSetupFunc $child_setup,
-    gpointer $child_setup_data,
-    GDestroyNotify $child_setup_data_destroy,
     Int() $timeout,
-    GCancellable() $cancellable = GCancellable,
-    &callback                   = Callable,
-    gpointer $user_data         = gpointer
+    &callback                                = Callable,
+    gpointer $user_data                      = gpointer,
+    &child_setup                             = Callable,
+    gpointer $child_setup_data               = Pointer,
+    GDestroyNotify $child_setup_data_destroy = Pointer,
+    GCancellable() $cancellable              = GCancellable,
   ) {
-    (
+    samewith(
+      $pty_flags,
+      $working_directory,
+      resolve-gstrv(@argv),
+      resolve-gstrv(@envv),
+      G_SPAWN_DEFAULT,
+      &child_setup,
+      $child_setup_data,
+      $child_setup_data_destroy,
+      $timeout,
+      $cancellable,
+      &callback,
+      $user_data
+    );
+  }
+  multi method spawn_async (
+    Int() $pty_flags,
+    Str() $working_directory,
+    @argv,
+    @envv,
+    Int() $timeout,
+    Int() $spawn_flags                       = G_SPAWN_DEFAULT,
+    &callback                                = Callable,
+    gpointer $user_data                      = gpointer,
+    &child_setup                             = Callable,
+    gpointer $child_setup_data               = Pointer,
+    GDestroyNotify $child_setup_data_destroy = Pointer,
+    GCancellable() $cancellable              = GCancellable,
+  ) {
+    samewith(
       $pty_flags,
       $working_directory,
       resolve-gstrv(@argv),
       resolve-gstrv(@envv),
       $spawn_flags,
-      $child_setup,
+      &child_setup,
       $child_setup_data,
       $child_setup_data_destroy,
       $timeout,

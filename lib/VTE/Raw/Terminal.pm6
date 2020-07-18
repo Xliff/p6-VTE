@@ -692,7 +692,7 @@ sub vte_terminal_spawn_sync(
   Pointer $child_setup_data,
   GPid $child_pid is rw,
   GCancellable $cancellable,
-  CArray[Pointer[GError]] error
+  CArray[Pointer[GError]] $error
 )
   returns gboolean
   is DEPRECATED
