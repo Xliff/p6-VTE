@@ -5,20 +5,20 @@ unit package App::VTETerm::Main;
 use App::VTETerm::App;
 use App::VTETerm::Options;
 
-my %PARAMETERS;
+our %PARAMETERS is export;
 
-my token func-call { '(&' (<[\w_\-]>+)? ')' }
-my token get-set   { '(=' (<[\w_\-]>+)? ')' }
-my token valiation { '(values:' .+? ')'     }
+my token func-call  { '(&' (<[\w_\-]>+)? ')' }
+my token get-set    { '(=' (<[\w_\-]>+)? ')' }
+my token validation { '(values:' .+? ')'     }
 
-class Config {
+class App::VTETerm::Config {
   my $version = v0.0.1;
 
   method version { $version };
 }
 
 sub version (|) {
-  say "Simpler VTE Test Application { Config.version }";
+  say "Simpler VTE Test Application { App::VTETerm::Config.version }";
   exit 0;
 }
 
@@ -26,10 +26,27 @@ sub debug ($d) {
   GDK::Window.set-debug-upates($d);
 }
 
+# Not being called?
+sub GENERATE-USAGE (&main, |c) {
+  my $usage = &*GENERATE-USAGE(&main, |c);
+
+  for $usage ~~ m:g/<func-call>/ {
+    with .<func-call> {
+      $usage.substr-rw(.from, .to - .from) = '';
+    }
+  }
+  for $usage ~~ m:g/<get-set>/ {
+    with .<get-set> {
+      $usage.substr-rw(.from, .to - .from) = '';
+    }
+  }
+  $usage
+}
+
 sub MAIN (
   Bool :$gregex,                     #= Use GRegex instead of PCRE2 (&no-pcre)
   Bool :$no-argb-visual,             #= Don't use an ARGB visual (=)
-  Bool :$no-builtin-dingus           #= Highlight URLs inside the terminal (=)
+  Bool :$no-builtin-dingus,          #= Highlight URLs inside the terminal (=)
   Bool :$no-context-menu,            #= Disable context menu (=)
   Bool :$reverse,                    #= Reverse foreground/background colors (=)
   Bool :$version,                    #= Show version (&version)
@@ -47,13 +64,13 @@ sub MAIN (
   Int  :n(:$scrollback-lines),       #= Specify the number of scrollback-lines (=)
   Int  :T(:$transparent),            #= Enable the use of a transparent background (values:0..100) (=transparency-percent)
   Str  :@env,                        #= Add environment variable to the child's environment (=environment)
-  Str  :$cjk-width                   #= Specify the cjk ambiguious width to use for UTF-8 encoing (=cjk-ambiguous-with-string)
+  Str  :$cjk-width,                  #= Specify the cjk ambiguious width to use for UTF-8 encoing (=cjk-ambiguous-with-string)
   Str  :$cursor-background-color,    #= Enable a colored cursor background (=cursor-background-color-string)
-  Str  :$cursor-blink                #= Cursor blink mode (values:system|on|off) (=cursor-blink-mode-string)
-  Str  :$cursor-foreground-color     #= Enable a colored cursor foreground (=cursor-foreground-color-string)
+  Str  :$cursor-blink,               #= Cursor blink mode (values:system|on|off) (=cursor-blink-mode-string)
+  Str  :$cursor-foreground-color,    #= Enable a colored cursor foreground (=cursor-foreground-color-string)
   Str  :$cursor-shape,               #= Set cursor shape (values:block|underline|ibeam) (=cursor-shape-string)
   Str  :$encoding,                   #= Specify the terminal encoding to use (=)
-  Str  :$highlight-background-color  #= Enable distinct highlight background color for selection (=hl-bg-color-string)
+  Str  :$highlight-background-color, #= Enable distinct highlight background color for selection (=hl-bg-color-string)
   Str  :$highlight-foreground-color, #= Enable distinct highlight foreground color for selection (=hl-fg-color-string)
   Str  :$output-file,                #= Save terminal contents to file at exit (=output-filename)
   Str  :$word-char-exceptions,       #= Specify the word char exceptions (=)
@@ -70,14 +87,14 @@ sub MAIN (
     my $pv = ::("{ %PARAMETERS{$_} }");
     my $pc = %PARAMETERS.WHY.trailing;
 
-    if $pv &&  $pc ~~ func-call {
+    if $pv &&  $pc ~~ &func-call {
       "$0"( $pv )
     }
 
-    if $pc ~~ get-set {
+    if $pc ~~ &get-set {
       my $attr = $0 // $_;
 
-      if $pc ~~ validate {
+      if $pc ~~ &validation {
         if $0.contains('|') {
           die "Parameter $_ contains invalid value '{ $pv }'"
             unless $pv eq $0.split('|').any;
@@ -88,27 +105,12 @@ sub MAIN (
         }
       }
 
-      $OPTIONS."{ $attr }" = $pv
+      $OPTIONS."{ $attr }"() = $pv
     }
   }
 
   App::VTETerm::App.new.run;
 }
-
-sub USAGE is export {
-  for $*USAGE ~~ m:g/<func-call>/ {
-    with .<func-call> {
-      $*USAGE.substr-rw(.from, .to - .from) = '';
-    }
-  }
-  for $*USAGE ~~ m:g/<get-set>/ {
-    with .<get-set> {
-      $*USAGE.substr-rw(.from, .to - .from) = '';
-    }
-  }
-  $*USAGE.say;
-}
-
 
 BEGIN {
   %PARAMETERS = (gather for &MAIN.signature.params.kv -> $k, $v {
