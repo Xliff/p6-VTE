@@ -7,6 +7,7 @@ use GTK::Popover;
 use GTK::Revealer;
 use GTK::SearchEntry;
 use GTK::ToggleButton;
+use VTE::Regex;
 use VTE::Terminal;
 use App::VTETerm::Options;
 
@@ -92,7 +93,7 @@ class App::VTETerm::SearchPopover is GTK::Popover {
           my $flags = 0x40080400;  # PCRE2_UTF | PCRE2_NO_UTF_CHECK | PCRE2_MULTILINE
 
           $flags +|= 0x00000008; if $caseless; # PCRE2_CASELESS
-          $regex = VTE::Rexes.new-for-search($pattern, $flags);
+          $regex = VTE::Regex.new-for-search($pattern, $flags);
 
           try {
             CATCH {
