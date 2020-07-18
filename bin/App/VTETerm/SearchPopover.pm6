@@ -30,7 +30,7 @@ class App::VTETerm::SearchPopover is GTK::Popover {
   has GTK::Revealer       $!revealer                .= new;
   has Bool                $!caseless                 = False;
   has Bool                $.has-regex                = False;
-  has String              $!pattern                  = Str;
+  has Str                 $!pattern                  = Str;
 
   submethod BUILD (:$term) {
     $!terminal = $term;
@@ -41,16 +41,16 @@ class App::VTETerm::SearchPopover is GTK::Popover {
     # ---
             $!search-entry.next-match.tap({ self!search(False) });
         $!search-entry.previous-match.tap({ self!search(True)  });
-        $!search-entry.search-changed.tap({ update-regex       });
+        $!search-entry.search-changed.tap({ self!update-regex  });
          $!search-next-button.clicked.tap({ self!search(False) });
          $!search-prev-button.clicked.tap({ self!search(True)  });
-     $!match-case-checkbutton.toggled.tap({ update-regex       });
-    $!entire-word-checkbutton.toggled.tap({ update-regex       });
-          $!regex-checkbutton.toggled.tap({ update-regex       });
+     $!match-case-checkbutton.toggled.tap({ self!update-regex  });
+    $!entire-word-checkbutton.toggled.tap({ self!update-regex  });
+          $!regex-checkbutton.toggled.tap({ self!update-regex  });
     # ---
 
     $!wrap-around-checkbutton.toggled.tap({
-      $!terminal.search-set-wrap-around(wrap-around-checkbutton.active);
+      $!terminal.search-set-wrap-around($!wrap-around-checkbutton.active);
     });
 
     self!update-sensitivity;
@@ -68,11 +68,11 @@ class App::VTETerm::SearchPopover is GTK::Popover {
   method !update-regex {
     my $pattern;
     my ($search-text, $caseless) =
-      ($!search-entry.text, $!match-case-checkbox.active);
+      ($!search-entry.text, $!match-case-checkbutton.active);
 
     $pattern = $!regex-checkbutton.active
-      ?? $!search-text
-      !! GLib::Regex.escape-string($!search-text);
+      ?? $search-text
+      !! GLib::Regex.escape-string($search-text);
     $pattern = '\b' ~ $pattern ~ '\b' if $!entire-word-checkbutton.active;
     return if $!caseless eq $caseless && $!pattern eq $pattern;
 
@@ -83,8 +83,8 @@ class App::VTETerm::SearchPopover is GTK::Popover {
     if $search-text.chars.not {
       try {
         CATCH {
-          when X::GLib::Error {
-            $!search-entry.tooltip-text = .message
+          when X::GLib::GError {
+            $!search-entry.tooltip-text = .message;
             $regex = $gregex = Nil;
           }
         }
@@ -92,12 +92,12 @@ class App::VTETerm::SearchPopover is GTK::Popover {
         if $OPTIONS.no-pcre.not {
           my $flags = 0x40080400;  # PCRE2_UTF | PCRE2_NO_UTF_CHECK | PCRE2_MULTILINE
 
-          $flags +|= 0x00000008; if $caseless; # PCRE2_CASELESS
-          $regex = VTE::Regex.new-for-search($pattern, $flags);
+          $flags  +|= 0x00000008 if $caseless; # PCRE2_CASELESS
+          $regex    = VTE::Regex.new-for-search($pattern, $flags);
 
           try {
             CATCH {
-              when X::GLib::Error {
+              when X::GLib::GError {
                 # PCRE2_ERROR_JIT_BADOPTION -- JIT not supported
                 if .code != -45 {
                   $*ERR.say:
@@ -112,7 +112,7 @@ class App::VTETerm::SearchPopover is GTK::Popover {
         } else {
           my $flags = G_REGEX_OPTIMIZE +| G_REGEX_MULTILINE;
 
-          $flags +|= G_REGX_CASELESS if $caseless
+          $flags +|= G_REGEX_CASELESS if $caseless;
           $gregex = GLib::Regex.new($pattern, $flags);
         }
 
@@ -136,7 +136,7 @@ class App::VTETerm::SearchPopover is GTK::Popover {
 
   method !search($back) {
     return unless $!has-regex;
-    $back ?? $!terminal.search-find-previous !! $!terminal-search-find-next;
+    $back ?? $!terminal.search-find-previous !! $!terminal.search-find-next;
   }
 
 }
