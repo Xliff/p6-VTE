@@ -37,7 +37,7 @@ sub vte_get_features ()
   is native(vte)
 { * }
 
-sub vte_set_test_flags (guint64 flags)
+sub vte_set_test_flags (guint64 $flags)
   is export
   is native(vte)
 { * }
