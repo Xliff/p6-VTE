@@ -5,44 +5,44 @@ use VTE::Raw::Types;
 use GDK::RGBA;
 
 class App::VTETerm::Options {
-  has Str  @.dingus                         = ();
-  has Str  @.environment                    = ();
-  has Str  $.cjk-ambiguous-width-string     = ''    is rw;
-  has Str  $.command                        = ''    is rw;
-  has Str  $!cursor-background-color-string = ''    is rw;
-  has Str  $!cursor-blink-mode-string       = ''    is rw;
-  has Str  $!cursor-foreground-color-string = ''    is rw;
-  has Str  $!cursor-shape-string            = ''    is rw;
-  has Str  $.encoding                       = ''    is rw;
-  has Str  $.font-string                    = ''    is rw;
-  has Str  $.geometry                       = ''    is rw;
-  has Str  $!hl-bg-color-string             = ''    is rw;
-  has Str  $!hl-fg-color-string             = ''    is rw;
-  has Str  $.icon-title                     = ''    is rw;
-  has Str  $.output-filename                = ''    is rw;
-  has Str  $.word-char-exceptions           = ''    is rw;
-  has Str  $.working-directory              = ''    is rw;
-  has Bool $.audible                        = False is rw;
-  has Bool $.debug                          = False is rw;
-  has Bool $.keep                           = False is rw;
-  has Bool $.no-argb-visual                 = False is rw;
-  has Bool $.no-builtin-dingus              = False is rw;
-  has Bool $.no-context-menu                = False is rw;
-  has Bool $.no-double-buffer               = False is rw;
-  has Bool $.no-geometry-hints              = False is rw;
-  has Bool $.no-hyperlink                   = False is rw;
-  has Bool $.no-pcre                        = False is rw;
-  has Bool $.no-rewrap                      = False is rw;
-  has Bool $.no-shell                       = False is rw;
-  has Bool $.object-notifications           = False is rw;
-  has Bool $.reverse                        = False is rw;
-  has Bool $.version                        = False is rw;
-  has Int  $.extra-margin                   = 0     is rw;
-  has Int  $.n-windows                      = 1     is rw;
-  has Int  $.scrollback-lines               = 512   is rw;
-  has Int  $.transparency-percent           = 0     is rw;
+  has Str  @.dingus                                = ()   ;
+  has Str  @.environment                           = ()   ;
+  has Str  $!cursor-background-color-string        = ''   ;
+  has Str  $!cursor-blink-mode-string              = ''   ;
+  has Str  $!cursor-foreground-color-string        = ''   ;
+  has Str  $!cursor-shape-string                   = ''   ;
+  has Str  $!hl-bg-color-string                    = ''   ;
+  has Str  $!hl-fg-color-string                    = ''   ;
+  has Str  $.cjk-ambiguous-width-string      is rw = ''   ;
+  has Str  $.command                         is rw = ''   ;
+  has Str  $.encoding                        is rw = ''   ;
+  has Str  $.font-string                     is rw = ''   ;
+  has Str  $.geometry                        is rw = ''   ;
+  has Str  $.icon-title                      is rw = ''   ;
+  has Str  $.output-filename                 is rw = ''   ;
+  has Str  $.word-char-exceptions            is rw = ''   ;
+  has Str  $.working-directory               is rw = ''   ;
+  has Bool $.audible                         is rw = False;
+  has Bool $.debug                           is rw = False;
+  has Bool $.keep                            is rw = False;
+  has Bool $.no-argb-visual                  is rw = False;
+  has Bool $.no-builtin-dingus               is rw = False;
+  has Bool $.no-context-menu                 is rw = False;
+  has Bool $.no-double-buffer                is rw = False;
+  has Bool $.no-geometry-hints               is rw = False;
+  has Bool $.no-hyperlink                    is rw = False;
+  has Bool $.no-pcre                         is rw = False;
+  has Bool $.no-rewrap                       is rw = False;
+  has Bool $.no-shell                        is rw = False;
+  has Bool $.object-notifications            is rw = False;
+  has Bool $.reverse                         is rw = False;
+  has Bool $.version                         is rw = False;
+  has Int  $.extra-margin                    is rw = 0    ;
+  has Int  $.n-windows                       is rw = 1    ;
+  has Int  $.scrollback-lines                is rw = 512  ;
+  has Int  $.transparency-percent            is rw = 0    ;
 
-  method get-color (Str() $s) {
+  method !get-color (Str() $s) {
     return Nil unless $s;
     my $c = GDK::RGBA.new;
     unless $c.parse($s) {
@@ -68,7 +68,7 @@ class App::VTETerm::Options {
 
   method get-hl-colors {
     (
-      self.color-hl-fg
+      self.color-hl-fg,
       self.color-hl-bg
     )
   }
@@ -89,11 +89,11 @@ class App::VTETerm::Options {
   }
 
   method cursor-shape {
-    getEnumValueByNick(VteCursorShapeEnum, $!cursor-cursor-shape-string);
+    getEnumValueByNick(VteCursorShapeEnum, $!cursor-shape-string);
   }
 }
 
 our $OPTIONS is export;
 INIT {
-  $OPTIONS = Options.new;
+  $OPTIONS = App::VTETerm::Options.new;
 }
