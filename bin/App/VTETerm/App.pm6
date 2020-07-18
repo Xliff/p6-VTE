@@ -1,6 +1,7 @@
 use v6.c;
 
 use GTK::Application;
+use GTK::Settings;
 use App::VTETerm::Options;
 use App::VTETerm::Window;
 
