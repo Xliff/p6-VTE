@@ -1,5 +1,7 @@
 use v6.c;
 
+use VTE::Raw::Types;
+
 use GTK::Application;
 use GTK::Settings;
 use App::VTETerm::Options;
@@ -8,7 +10,7 @@ use App::VTETerm::Window;
 constant MAX_WINDOWS = 16;
 
 class App::VTETerm::App is GTK::Application {
-  my @!windows;
+  has @!windows;
 
   submethod BUILD {
     self.startup.tap({
