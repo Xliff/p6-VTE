@@ -81,3 +81,9 @@ constant VteWriteFlags is export := guint32;
 our enum VteWriteFlagsEnum is export (
   VTE_WRITE_DEFAULT => 0,
 );
+
+constant VteTestFlags is export := guint64;
+our enum VteTestFlagsEnum is export (
+  VTE_TEST_FLAGS_NONE => 0,
+  VTE_TEST_FLAGS_ALL  => 2 ** 64 - 1
+);

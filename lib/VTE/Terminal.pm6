@@ -1,8 +1,7 @@
 use v6.c;
 
-use Method::Also;
-
 use NativeCall;
+use Method::Also;
 
 use VTE::Raw::Types;
 use VTE::Raw::Terminal;
@@ -49,6 +48,84 @@ class VTE::Terminal is GTK::Widget {
     my $terminal = vte_terminal_new();
 
     $terminal ?? self.bless( :$terminal ) !! Nil;
+  }
+
+  method allow-hyperlink is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_allow_hyperlink    },
+      STORE => -> $, Int() \b { self.set_allow_hyperlink(b) };
+  }
+
+  method audible-bell is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_audible_bell    },
+      STORE => -> $, Int() \b { self.set_audible_bell(b) };
+  }
+
+  method cjk-ambiguous-width is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_cjk_ambiguous_width    },
+      STORE => -> $, Int() \i { self.set-cjk-ambiguous-width(i) };
+  }
+
+  method cursor-blink-mode is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_cursor_blink_mode    },
+      STORE => -> $, Int() \i { self.set_cursor_blink_mode(i) };
+  }
+
+  method cursor-shape is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_cursor_shape    },
+      STORE => -> $, Int() \i { self.set_cursor_shape(i) };
+  }
+
+  method encoding is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_encoding    },
+      STORE => -> $, Str() \e { self.set_encoding(e) };
+  }
+
+  method font-scale is rw {
+    Proxy.new:
+      FETCH => -> $           { self.get_font_scale    },
+      STORE => -> $, Num() \n { self.set-font-scale(n) };
+  }
+
+  method mouse-autohide is rw {
+    Proxy.new:
+      FETCH => -> $           { self.mouse_autohide    },
+      STORE => -> $, Int() \i { self.mouse_autohide(i) };
+  }
+
+  method rewrap-on-resize is rw {
+    Proxy.new:
+      FETCH => -> $           { self.rewrap_on_resize    },
+      STORE => -> $, Int() \i { self.rewrap_on_resize(i) };
+  }
+
+  method scroll-on-output is rw {
+    Proxy.new:
+      FETCH => -> $           { self.scroll_on_output    },
+      STORE => -> $, Int() \i { self.scroll_on_output(i) };
+  }
+
+  method scroll-on-keystroke is rw {
+    Proxy.new:
+      FETCH => -> $           { self.scroll_on_keystroke    },
+      STORE => -> $, Int() \i { self.scroll_on_keystroke(i) };
+  }
+
+  method scrollback-lines is rw {
+    Proxy.new:
+      FETCH => -> $           { self.scrollback_lines    },
+      STORE => -> $, Int() \i { self.scrollback_lines(i) };
+  }
+
+  method word-char-exceptions is rw is also<word_char_exceptions> {
+    Proxy.new:
+      FETCH => -> $           { self.get_word_char_exceptions     },
+      STORE => -> $, Str() \e { self.set_word_char_exceptions(e)  };
   }
 
   method copy_clipboard_format (Int() $format) is also<copy-clipboard-format> {
@@ -231,7 +308,15 @@ class VTE::Terminal is GTK::Widget {
       Nil;
   }
 
-  method get_row_count is also<get-row-count> {
+  method get_row_count
+    is also<
+      get-row-count
+      row_count
+      row-count
+      rows
+      r-elems
+    >
+  {
     vte_terminal_get_row_count($!vt);
   }
 
@@ -247,11 +332,33 @@ class VTE::Terminal is GTK::Widget {
     vte_terminal_get_scrollback_lines($!vt);
   }
 
+  # cw: IF, given as I suspect, get_size is actually resolution in pixels,
+  #     this method should return the number of text rows and columns!
+  # method get_rc is also<get-rc> {
+  #
+  #   self.get_size( :rev );
+  # }
+
+  method get_size ( :rev(:$reversed) = False )
+    is also<
+      get-size
+      size
+      get_resolution
+      get-resolution
+    >
+  {
+    my @resolution = (self.get_column_count, self.get_row_count);
+
+    $reversed ?? @resolution !! @resolution.reverse;
+  }
+
   method get_text (
     &is_selected,
     gpointer $user_data,
     GArray() $attributes
-  ) is also<get-text> {
+  )
+    is also<get-text>
+  {
     vte_terminal_get_text($!vt, &is_selected, $user_data, $attributes);
   }
 
@@ -311,7 +418,14 @@ class VTE::Terminal is GTK::Widget {
     unstable_get_type( self.^name, &vte_terminal_get_type, $n, $t );
   }
 
-  method get_window_title is also<get-window-title> {
+  method get_window_title
+    is also<
+      get-window-title
+      winow_title
+      window-title
+      title
+    >
+  {
     vte_terminal_get_window_title($!vt);
   }
 
@@ -508,6 +622,22 @@ class VTE::Terminal is GTK::Widget {
     vte_terminal_set_color_bold($!vt, $bold);
   }
 
+  method set_cursor_colors (
+    GdkRGBA $foreground,
+    GdkRGBA $background
+  ) {
+    self.set_color_cursor($background);
+    self.set_color_cursor_foreground($foreground);
+  }
+
+  method set_highlight_colors (
+    GdkRGBA $foreground,
+    GdkRGBA $background
+  ) {
+    self.set_color_highlight($background);
+    self.set_color_highlight_foreground($foreground);
+  }
+
   method set_color_cursor (GdkRGBA $cursor_background)
     is also<set-color-cursor>
   {
@@ -542,6 +672,12 @@ class VTE::Terminal is GTK::Widget {
       is also<set-colors>
   { * }
 
+  multi method set_colors (
+    GdkRGBA $foreground,
+    GdkRGBA $background
+  ) {
+    samewith($foreground, $background, Pointer, 0);
+  }
   multi method set_colors (
     GdkRGBA $foreground,
     GdkRGBA $background,
@@ -669,6 +805,91 @@ class VTE::Terminal is GTK::Widget {
     vte_terminal_set_word_char_exceptions($!vt, $exceptions);
   }
 
+  proto method spawn_sync (|)
+    is also<spawn-sync>
+    is DEPRECATED
+  { * }
+
+  multi method spawn_sync (
+    Str() $working_directory,
+    @argv,
+    @envv,
+    &child_setup (Pointer)         = Callable,
+    Pointer $child_setup_data      = Pointer,
+    GCancellable $cancellable      = GCancellable,
+    CArray[Pointer[GError]] $error = gerror
+  ) {
+    samewith(
+      $working_directory,
+      resolve-gstrv(@argv),
+      resolve-gstrv(@envv),
+      G_SPAWN_DEFAULT,
+      VTE_PTY_DEFAULT,
+      $,
+      $cancellable,
+      $error
+    );
+  }
+  multi method spawn_sync (
+    Str() $working_directory,
+    @argv,
+    @envv,
+    Int() $spawn_flags             = G_SPAWN_DEFAULT,
+    Int() $pty_flags               = VTE_PTY_DEFAULT,
+    &child_setup (Pointer)         = Callable,
+    Pointer $child_setup_data      = Pointer,
+    GCancellable $cancellable      = GCancellable,
+    CArray[Pointer[GError]] $error = gerror
+  ) {
+    my $rv = samewith(
+      $pty_flags,
+      $working_directory,
+      resolve-gstrv(@argv),
+      resolve-gstrv(@envv),
+      $spawn_flags,
+      &child_setup,
+      $,
+      $cancellable,
+      $error
+    );
+
+    $rv[0] ?? $rv.skip(1) !! Nil;
+  }
+
+  multi method spawn_sync (
+    Int() $pty_flags,
+    Str() $working_directory,
+    CArray[Str] $argv,
+    CArray[Str] $envv,
+    Int() $spawn_flags,
+    &child_setup (Pointer),
+    Pointer $child_setup_data,
+    $child_pid is rw,
+    GCancellable $cancellable      = GCancellable,
+    CArray[Pointer[GError]] $error = gerror,
+    :$all = False
+  ) {
+    my VtePtyFlags $pf = $pty_flags;
+    my GSpawnFlags $sf = $spawn_flags;
+    my GPid $cpid = 0;
+
+    clear_error;
+    my $rv = so vte_terminal_spawn_sync(
+      $pf,
+      $working_directory,
+      $argv,
+      $envv,
+      $sf,
+      &child_setup,
+      $cpid,
+      $cancellable,
+      $error
+    );
+    set_error($error);
+    $child_pid = $cpid;
+    $all.not ?? $rv !! ($rv, $child_pid);
+  }
+
   proto method spawn_async (|)
       is also<spawn-async>
   { * }
@@ -678,22 +899,50 @@ class VTE::Terminal is GTK::Widget {
     Str() $working_directory,
     @argv,
     @envv,
-    Int() $spawn_flags,
-    GSpawnChildSetupFunc $child_setup,
-    gpointer $child_setup_data,
-    GDestroyNotify $child_setup_data_destroy,
     Int() $timeout,
-    GCancellable() $cancellable = GCancellable,
-    &callback                   = Callable,
-    gpointer $user_data         = gpointer
+    &callback                                = Callable,
+    gpointer $user_data                      = gpointer,
+    &child_setup                             = Callable,
+    gpointer $child_setup_data               = Pointer,
+    GDestroyNotify $child_setup_data_destroy = Pointer,
+    GCancellable() $cancellable              = GCancellable,
   ) {
-    (
+    samewith(
+      $pty_flags,
+      $working_directory,
+      resolve-gstrv(@argv),
+      resolve-gstrv(@envv),
+      G_SPAWN_DEFAULT,
+      &child_setup,
+      $child_setup_data,
+      $child_setup_data_destroy,
+      $timeout,
+      $cancellable,
+      &callback,
+      $user_data
+    );
+  }
+  multi method spawn_async (
+    Int() $pty_flags,
+    Str() $working_directory,
+    @argv,
+    @envv,
+    Int() $timeout,
+    Int() $spawn_flags                       = G_SPAWN_DEFAULT,
+    &callback                                = Callable,
+    gpointer $user_data                      = gpointer,
+    &child_setup                             = Callable,
+    gpointer $child_setup_data               = Pointer,
+    GDestroyNotify $child_setup_data_destroy = Pointer,
+    GCancellable() $cancellable              = GCancellable,
+  ) {
+    samewith(
       $pty_flags,
       $working_directory,
       resolve-gstrv(@argv),
       resolve-gstrv(@envv),
       $spawn_flags,
-      $child_setup,
+      &child_setup,
       $child_setup_data,
       $child_setup_data_destroy,
       $timeout,
@@ -759,4 +1008,21 @@ class VTE::Terminal is GTK::Widget {
 
     vte_terminal_write_contents_sync($!vt, $stream, $f, $cancellable, $error);
   }
+
+  method get_encoding is also<get-encoding> {
+    vte_terminal_get_encoding($!vt)
+  }
+
+  method set_encoding (
+    Str() $codeset,
+    CArray[Pointer[GError]] $error = gerror
+  )
+    is also<set-encoding>
+  {
+    clear_error;
+    my $rv = so vte_terminal_set_encoding($!vt, $codeset, $error);
+    set_error($error);
+    $rv;
+  }
+
 }
