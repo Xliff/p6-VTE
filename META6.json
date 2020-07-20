@@ -1,6 +1,6 @@
 {
     "depends": [
-        "p6-GtkPlus",
+        "p6-GtkPlus"
     ],
     "description": "Perl6 library bindings for Gnome's VTE 2 library",
     "version": "r0.1",
@@ -12,6 +12,7 @@
       "VTE::Raw::Definitions" :  "lib/VTE/Raw/Definitions.pm6" ,
       "VTE::Raw::Types"       :  "lib/VTE/Raw/Types.pm6"       ,
       "VTE::Types"            :  "lib/VTE/Types.pm6"           ,
+      "VTE::Global"           :  "lib/VTE/Global.pm6"          ,
       "VTE::Raw::Pty"         :  "lib/VTE/Raw/Pty.pm6"         ,
       "VTE::Raw::Regex"       :  "lib/VTE/Raw/Regex.pm6"       ,
       "VTE::Raw::Terminal"    :  "lib/VTE/Raw/Terminal.pm6"    ,
@@ -30,5 +31,5 @@
         "File::Find"
     ],
     "support": {"source": null},
-    "authors": ["clifton.wood@gmail.com"],
+    "authors": ["clifton.wood@gmail.com"]
 }
