@@ -27,21 +27,12 @@ sub debug ($d) {
 }
 
 # Not being called?
-sub GENERATE-USAGE (&main, |c) {
+sub GENERATE-USAGE (&main, |c) is export {
   my $usage = &*GENERATE-USAGE(&main, |c);
 
-  for $usage ~~ m:g/<func-call>/ {
-    .gist.say;
-    with .<func-call> {
-      $usage.substr-rw(.from, .to - .from) = '';
-    }
-  }
-  for $usage ~~ m:g/<get-set>/ {
-    .gist.say;
-    with .<get-set> {
-      $usage.substr-rw(.from, .to - .from) = '';
-    }
-  }
+  $usage.substr-rw(.from, .to - .from) = ''
+    for ($usage ~~ m:g/[ <func-call> | <get-set> | <validation>]/).reverse;
+
   $usage
 }
 
