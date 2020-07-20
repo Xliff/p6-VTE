@@ -31,11 +31,13 @@ sub GENERATE-USAGE (&main, |c) {
   my $usage = &*GENERATE-USAGE(&main, |c);
 
   for $usage ~~ m:g/<func-call>/ {
+    .gist.say;
     with .<func-call> {
       $usage.substr-rw(.from, .to - .from) = '';
     }
   }
   for $usage ~~ m:g/<get-set>/ {
+    .gist.say;
     with .<get-set> {
       $usage.substr-rw(.from, .to - .from) = '';
     }
@@ -87,7 +89,7 @@ sub MAIN (
     my $pv = ::("{ %PARAMETERS{$_} }");
     my $pc = %PARAMETERS.WHY.trailing;
 
-    if $pv &&  $pc ~~ &func-call {
+    if $pv && $pc ~~ &func-call {
       "$0"( $pv )
     }
 
