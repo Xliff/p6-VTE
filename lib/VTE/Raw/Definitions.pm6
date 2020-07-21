@@ -8,7 +8,7 @@ use GLib::Roles::Pointers;
 
 unit package VTE::Raw::Definitions;
 
-our constant vte is export = 'vte-2.91',v3;
+our constant vte is export = 'vte-2.91',v0;
 
 class VtePty      is repr<CPointer> does GLib::Roles::Pointers is export { }
 class VteRegex    is repr<CPointer> does GLib::Roles::Pointers is export { }
