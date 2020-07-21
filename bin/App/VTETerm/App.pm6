@@ -14,7 +14,7 @@ class App::VTETerm::App is GTK::Application {
 
   submethod BUILD {
     self.startup.tap({
-      @!windows.push: App::VteTerm::Window.new(self)
+      @!windows.push: App::VTETerm::Window.new(self)
         for ^($OPTIONS.n-windows, MAX_WINDOWS).min;
     });
 
