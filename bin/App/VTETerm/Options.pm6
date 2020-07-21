@@ -7,12 +7,12 @@ use GDK::RGBA;
 class App::VTETerm::Options {
   has Str  @.dingus                                = ()   ;
   has Str  @.environment                           = ()   ;
-  has Str  $!cursor-background-color-string        = ''   ;
-  has Str  $!cursor-blink-mode-string              = ''   ;
-  has Str  $!cursor-foreground-color-string        = ''   ;
-  has Str  $!cursor-shape-string                   = ''   ;
-  has Str  $!hl-bg-color-string                    = ''   ;
-  has Str  $!hl-fg-color-string                    = ''   ;
+  has Str  $.cursor-background-color-string  is rw = ''   ;
+  has Str  $.cursor-blink-mode-string        is rw = ''   ;
+  has Str  $.cursor-foreground-color-string  is rw = ''   ;
+  has Str  $.cursor-shape-string             is rw = ''   ;
+  has Str  $.hl-bg-color-string              is rw = ''   ;
+  has Str  $.hl-fg-color-string              is rw = ''   ;
   has Str  $.cjk-ambiguous-width-string      is rw = ''   ;
   has Str  $.command                         is rw = ''   ;
   has Str  $.encoding                        is rw = ''   ;
