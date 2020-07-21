@@ -18,7 +18,7 @@
       "VTE::Raw::Terminal"    :  "lib/VTE/Raw/Terminal.pm6"    ,
       "VTE::Regex"            :  "lib/VTE/Regex.pm6"           ,
       "VTE::Pty"              :  "lib/VTE/Pty.pm6"             ,
-      "VTE::Terminal"         :  "lib/VTE/Terminal.pm6"
+      "VTE::Terminal"         :  "lib/VTE/Terminal.pm6"        
     },
     "name": "p6-VTE",
     "perl": "6.c",
