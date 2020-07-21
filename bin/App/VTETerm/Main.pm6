@@ -2,14 +2,17 @@ use v6.c;
 
 unit package App::VTETerm::Main;
 
+use GDK::Window;
 use App::VTETerm::App;
 use App::VTETerm::Options;
 
 our %PARAMETERS is export;
 
-my token func-call  { '(&' (<[\w_\-]>+)? ')' }
-my token get-set    { '(=' (<[\w_\-]>+)? ')' }
-my token validation { '(values:' .+? ')'     }
+my token no-cp      { <-[)]>+ }
+
+my token func-call  { '(&'       (<no-cp>) ')' }
+my token get-set    { '(='       (<no-cp>) ')' }
+my token validation { '(values:' (<no-cp>) ')' }
 
 class App::VTETerm::Config {
   my $version = v0.0.1;
@@ -26,14 +29,27 @@ sub debug ($d) {
   GDK::Window.set-debug-upates($d);
 }
 
+sub no-pcre ($value) {
+  $OPTIONS.no-pcre = $value.not;
+}
+
 # Not being called?
 sub GENERATE-USAGE (&main, |c) is export {
   my $usage = &*GENERATE-USAGE(&main, |c);
 
   $usage.substr-rw(.from, .to - .from) = ''
-    for ($usage ~~ m:g/[ <func-call> | <get-set> | <validation>]/).reverse;
+    for ( $usage ~~ m:g/[ <func-call> | <get-set> | <validation>]/ ).reverse;
 
   $usage
+}
+
+class X::MAIN is Exception {
+  has $!err;
+
+  submethod BUILD (:$!err) { }
+
+  method new ($err) { self.bless(:$err) }
+  method message    { $!err }
 }
 
 sub MAIN (
@@ -44,7 +60,7 @@ sub MAIN (
   Bool :$reverse,                    #= Reverse foreground/background colors (=)
   Bool :$version,                    #= Show version (&version)
   Bool :a(:$audible-bell),           #= Use audible terminal bell (=audible)
-  Bool :d(:$debug),                  #= Enable various debugging checks (&ebug)
+  Bool :d(:$debug),                  #= Enable various debugging checks (&debug)
   Bool :G(:$no-geometry-hints),      #= Allow the terminal to be resized to any dimension, not constrained to fit to an integer multiple of characters (=)
   Bool :H(:$no-hyperlink),           #= Disable hyperlinks (=)
   Bool :k(:$keep),                   #= Live on after the command exits (=)
@@ -53,10 +69,10 @@ sub MAIN (
   Bool :S(:$no-shell),               #= Disable spawning a shell inside the terminal (=)
   Bool :two($no-double-buffer),      #= Disable double-buffering (=)
   Int  :$extra-margin,               #= Add extra margin around the terminal widget (=)
-  Int  :$windows = 1,                #= Open multiple windows (default: 1) (=n-windows)
+  Int  :$windows,                    #= Open multiple windows (default: 1) (=n-windows)
   Int  :n(:$scrollback-lines),       #= Specify the number of scrollback-lines (=)
   Int  :T(:$transparent),            #= Enable the use of a transparent background (values:0..100) (=transparency-percent)
-  Str  :@env,                        #= Add environment variable to the child's environment (=environment)
+  Str  :$env,                        #= Add environment variable to the child's environment (=environment)
   Str  :$cjk-width,                  #= Specify the cjk ambiguious width to use for UTF-8 encoing (=cjk-ambiguous-with-string)
   Str  :$cursor-background-color,    #= Enable a colored cursor background (=cursor-background-color-string)
   Str  :$cursor-blink,               #= Cursor blink mode (values:system|on|off) (=cursor-blink-mode-string)
@@ -68,7 +84,7 @@ sub MAIN (
   Str  :$output-file,                #= Save terminal contents to file at exit (=output-filename)
   Str  :$word-char-exceptions,       #= Specify the word char exceptions (=)
   Str  :c(:$command),                #= Execute a command in the terminal (=)
-  Str  :D(:@dingu),                  #= Add regex highlight (=dingus)
+  Str  :D(:$dingu),                  #= Add regex highlight (=dingus)
   Str  :f(:$font),                   #= Specify a font to use (=font-string)
   Str  :g(:$geometry),               #= Set the size (in characters) and position (=)
   Str  :i(:$icon-title),             #= Enable the setting of the icon title (=)
@@ -76,37 +92,70 @@ sub MAIN (
 )
   is export
 {
-  for %PARAMETERS.keys {
-    my $pv = ::("{ %PARAMETERS{$_} }");
-    my $pc = %PARAMETERS.WHY.trailing;
+  CATCH {
+    when X::MAIN { .message.say; exit }
+  }
 
-    if $pv && $pc ~~ &func-call {
-      "$0"( $pv )
+  for %PARAMETERS.kv -> $pn, $pt {
+    my $pv = ::("\${$pn}");
+    next without $pv;
+
+    say "---- $pn ----";
+    $pv.^name.say;
+    $pv.gist.say;
+
+    my $pc = $pt[1];
+    if $pn && $pc ~~ &func-call {
+      say "Calling { $0 }...";
+      ::("\&{$0}")( $pv );
     }
 
     if $pc ~~ &get-set {
-      my $attr = $0 // $_;
+      my $attr = $0 // $pn;
 
-      if $pc ~~ &validation {
-        if $0.contains('|') {
-          die "Parameter $_ contains invalid value '{ $pv }'"
+      if $pt[2] -> $v {
+        if $v ~~ Array {
+          X::MAIN.new("Parameter $pn contains invalid value '{ $pv }'").throw
             unless $pv eq $0.split('|').any;
-        } elsif $0.contains('..') {
-          my ($to, $from) = $0.split('..');
-          die "Parameter $_ is out of range. Must be in range { $0 }"
-            unless $pv ~~ $to .. $from;
+        } elsif $v ~~ Range {
+          X::MAIN.new(
+            "Parameter $pn is out of range. Must be in range {
+             $v.min }..{ $v.max }"
+          ).throw unless $pv ~~ $v;
         }
       }
 
-      $OPTIONS."{ $attr }"() = $pv
+      $OPTIONS."{ $attr }"() = $pv;
+      say "OPTIONS.{ $attr } set to { $OPTIONS."{ $attr }"() }";
     }
   }
+  exit;
 
   App::VTETerm::App.new.run;
 }
 
 BEGIN {
   %PARAMETERS = (gather for &MAIN.signature.params.kv -> $k, $v {
-    take Pair.new($v.name, $k);
-  }).Hash
+    my $pn = $v.name.substr(1);
+    my $pc = $v.WHY.trailing;
+
+    my $pv = [ $k, $v.WHY.trailing ];
+    if $pc ~~ &validation {
+      if $0.contains('|') {
+        $pv.push: $0.split('|').grep( *.chars );
+      } elsif $0.contains('..') {
+        my ($to, $from) = $0.split('..');
+        X::MAIN.new(
+          "Invalid range 'to' specification in parameter $k!"
+        ).throw unless $to ~~ /^ \d+ $/;
+        X::MAIN.new(
+          "Invalid range 'from' specification in parameter $pn!"
+        ).throw unless $from ~~ /^ \d+ $/;
+        $pv.push: $to..$from;
+      }
+    }
+
+    take Pair.new($v.name.substr(1), $pv);
+  }).Hash;
+  %PARAMETERS.gist.say;
 }
