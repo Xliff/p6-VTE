@@ -2,7 +2,6 @@ use v6.c;
 
 use NativeCall;
 
-use CompUnit::Util :re-export;
 use GLib::Raw::Exports;
 use Pango::Raw::Exports;
 use GIO::Raw::Exports;
@@ -10,7 +9,7 @@ use GDK::Raw::Exports;
 use GTK::Raw::Exports;
 use VTE::Raw::Exports;
 
-my constant forced = 6;
+my constant forced = 12;
 
 unit package VTE::Raw::Types;
 
@@ -42,11 +41,10 @@ need GTK::Raw::Requisition;
 need VTE::Raw::Definitions;
 
 BEGIN {
-  re-export($_) for
-    |@glib-exports,
-    |@pango-exports,
-    |@gio-exports,
-    |@gdk-exports,
-    |@gtk-exports,
-    |@vte-exports;
+  glib-re-export($_) for |@glib-exports,
+                         |@pango-exports,
+                         |@gio-exports,
+                         |@gdk-exports,
+                         |@gtk-exports,
+                         |@vte-exports;
 }
