@@ -9,7 +9,7 @@ use GDK::Raw::Exports;
 use GTK::Raw::Exports;
 use VTE::Raw::Exports;
 
-my constant forced = 12;
+my constant forced = 20;
 
 unit package VTE::Raw::Types;
 
@@ -28,6 +28,7 @@ need GIO::DBus::Raw::Types;
 need GIO::Raw::Definitions;
 need GIO::Raw::Enums;
 need GIO::Raw::Structs;
+need GIO::Raw::Quarks;
 need GIO::Raw::Subs;
 need GDK::Raw::Definitions;
 need GDK::Raw::Enums;
