@@ -14,7 +14,7 @@ use VTE::Regex;
 use GLib::Roles::TypedBuffer;
 
 our subset VteTerminalAncestry is export of Mu
-  where VteTerminal | WidgetAncestry;
+  where VteTerminal | GtkWidgetAncestry;
 
 class VTE::Terminal is GTK::Widget {
   has VteTerminal $!vt;
