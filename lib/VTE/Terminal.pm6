@@ -12,12 +12,15 @@ use VTE::Pty;
 use VTE::Regex;
 
 use GLib::Roles::TypedBuffer;
+use GTK::Roles::Scrollable;
 
 our subset VteTerminalAncestry is export of Mu
-  where VteTerminal | GtkWidgetAncestry;
+  where VteTerminal | GtkScrollable | GtkWidgetAncestry;
 
 class VTE::Terminal is GTK::Widget {
-  has VteTerminal $!vt;
+  also does GTK::Roles::Scrollable;
+
+  has VteTerminal $!vt is implementor;
 
   submethod BUILD (:$terminal) {
     self.setVteTerminal($terminal) if $terminal;
@@ -32,12 +35,19 @@ class VTE::Terminal is GTK::Widget {
         $_;
       }
 
+      when GtkScrollable {
+        $to-parent = cast(GtkWidget, $_);
+        $!s = $_;
+        cast(VteTerminal, $_);
+      }
+
       default {
         $to-parent = $_;
         cast(VteTerminal, $_);
       }
     }
     self.setWidget($to-parent);
+    self.roleInit-GtkScrollable;
   }
 
   method VTE::Raw::Definitions::VteTerminal
