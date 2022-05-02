@@ -1,0 +1,248 @@
+
+Parallel build started for Raku 2022.04.26.g.280.a.2090.b on MoarVM 2022.04
+ === VTE::Raw::Exports (1/11) === 
+
+Stage start      :   0.000
+Stage parse      :   1.071
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.002
+Stage mast       :   0.007
+Stage mbc        :   0.005
+Stage moar       :   0.000
+
+VTE::Raw::Exports compile time: 1.78389146
+ === VTE::Raw::Definitions (2/11) === 
+
+Stage start      :   0.000
+
+    precomp lib/VTE/Raw/Definitions.pm6
+    Stage start      :   0.000
+    Stage parse      :   1.881
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.009
+    Stage mast       :   0.021
+    Stage mbc        :   0.023
+Stage parse      :   3.492
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.001
+Stage mast       :   0.002
+Stage mbc        :   0.001
+Stage moar       :   0.000
+
+VTE::Raw::Definitions compile time: 4.09356877
+ === VTE::Types (3/11) === 
+
+Stage start      :   0.000
+
+    precomp lib/VTE/Types.pm6
+    Stage start      :   0.000
+    
+        load    lib/VTE/Raw/Definitions.pm6
+    Stage parse      :   2.308
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.009
+    Stage mast       :   0.016
+    Stage mbc        :   0.013
+Stage parse      :   3.836
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.001
+Stage mast       :   0.001
+Stage mbc        :   0.001
+Stage moar       :   0.000
+
+VTE::Types compile time: 4.4330675
+ === VTE::Raw::Types (4/11) === 
+
+Stage start      :   0.000
+
+    precomp lib/VTE/Raw/Types.pm6
+    Stage start      :   0.000
+    
+        load    lib/VTE/Raw/Definitions.pm6
+    Stage parse      :   2.819
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.002
+    Stage mast       :   0.016
+    Stage mbc        :   0.008
+Stage parse      :   4.097
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.014
+Stage mast       :   0.020
+Stage mbc        :   0.016
+Stage moar       :   0.000
+
+VTE::Raw::Types compile time: 4.75253299
+ === VTE::Raw::Regex (5/11) === 
+
+Stage start      :   0.000
+
+    precomp lib/VTE/Raw/Regex.pm6
+    Stage start      :   0.000
+    
+        load    lib/VTE/Raw/Types.pm6
+    Stage parse      :   3.354
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.019
+    Stage mast       :   0.023
+    Stage mbc        :   0.054
+Stage parse      :   5.170
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.001
+Stage mast       :   0.002
+Stage mbc        :   0.002
+Stage moar       :   0.000
+
+VTE::Raw::Regex compile time: 5.75409997
+ === VTE::Raw::Pty (6/11) === 
+
+Stage start      :   0.000
+
+    precomp lib/VTE/Raw/Pty.pm6
+    Stage start      :   0.000
+    
+        load    lib/VTE/Raw/Types.pm6
+    Stage parse      :   3.243
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.018
+    Stage mast       :   0.025
+    Stage mbc        :   0.165
+Stage parse      :   5.141
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.001
+Stage mast       :   0.002
+Stage mbc        :   0.002
+Stage moar       :   0.000
+
+VTE::Raw::Pty compile time: 5.78757837
+ === VTE::Global (7/11) === 
+
+Stage start      :   0.000
+
+    precomp lib/VTE/Global.pm6
+    Stage start      :   0.000
+    
+        load    lib/VTE/Raw/Types.pm6
+    Stage parse      :   3.355
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.022
+    Stage mast       :   0.035
+    Stage mbc        :   0.030
+Stage parse      :   5.186
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.000
+Stage mast       :   0.001
+Stage mbc        :   0.002
+Stage moar       :   0.000
+
+VTE::Global compile time: 5.82417997
+ === VTE::Regex (8/11) === 
+
+Stage start      :   0.000
+
+    precomp lib/VTE/Regex.pm6
+    Stage start      :   0.000
+    
+        load    lib/VTE/Raw/Types.pm6
+    
+        load    lib/VTE/Raw/Regex.pm6
+    Stage parse      :   3.743
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.032
+    Stage mast       :   0.029
+    Stage mbc        :   0.020
+Stage parse      :   5.478
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.001
+Stage mast       :   0.002
+Stage mbc        :   0.001
+Stage moar       :   0.000
+
+VTE::Regex compile time: 6.02981402
+ === VTE::Pty (9/11) === 
+
+Stage start      :   0.000
+
+    precomp lib/VTE/Pty.pm6
+    Stage start      :   0.000
+    
+        load    lib/VTE/Raw/Types.pm6
+    Stage parse      :   4.492
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.033
+    Stage mast       :   0.053
+    Stage mbc        :   0.041
+Stage parse      :   6.483
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.000
+Stage mast       :   0.001
+Stage mbc        :   0.001
+Stage moar       :   0.000
+
+VTE::Pty compile time: 7.09990042
+ === VTE::Raw::Terminal (10/11) === 
+
+Stage start      :   0.000
+
+    precomp lib/VTE/Raw/Terminal.pm6
+    Stage start      :   0.000
+    
+        load    lib/VTE/Raw/Types.pm6
+    Stage parse      :   6.619
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.047
+    Stage mast       :   0.072
+    Stage mbc        :   0.487
+Stage parse      :   9.055
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.001
+Stage mast       :   0.002
+Stage mbc        :   0.002
+Stage moar       :   0.000
+
+VTE::Raw::Terminal compile time: 9.67290726
+ === VTE::Terminal (11/11) === 
+
+Stage start      :   0.000
+
+    precomp lib/VTE/Terminal.pm6
+    Stage start      :   0.000
+    
+        load    lib/VTE/Raw/Types.pm6
+    
+        load    lib/VTE/Raw/Terminal.pm6
+    Stage parse      :  10.401
+    Stage syntaxcheck:   0.000
+    Stage ast        :   0.000
+    Stage optimize   :   0.070
+    Stage mast       :   0.125
+    Stage mbc        :   0.039
+Stage parse      :  12.848
+Stage syntaxcheck:   0.000
+Stage ast        :   0.000
+Stage optimize   :   0.000
+Stage mast       :   0.002
+Stage mbc        :   0.001
+Stage moar       :   0.000
+
+VTE::Terminal compile time: 13.4354829
+
+Total compile time: 13.53879603s
